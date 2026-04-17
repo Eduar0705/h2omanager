@@ -1,11 +1,21 @@
 import { useState, useEffect } from 'react';
 import {
     FiSearch, FiRefreshCw, FiPlus, FiEdit2, FiTrash2, FiX,
-    FiPhone, FiMail, FiCheck, FiChevronLeft, FiChevronRight, FiPackage, FiMapPin, FiUsers
+    FiPhone, FiCheck, FiChevronLeft, FiChevronRight, FiPackage, FiMapPin, FiUsers
 } from 'react-icons/fi';
 import Swal from 'sweetalert2';
 import * as proveedorService from './services/provedores.service';
 import '../assets/css/modulos.css';
+
+const emptyProveedorForm = () => ({
+    name: '',
+    rif: '',
+    phone: '',
+    email: '',
+    address: '',
+    category: 'Agua',
+    status: 'active',
+});
 
 export default function Proveedores() {
     const [proveedores, setProveedores] = useState([]);
@@ -15,7 +25,7 @@ export default function Proveedores() {
     const [currentPage, setCurrentPage] = useState(1);
     const [showModal, setShowModal] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
-    const [form, setForm] = useState({ name: '', rif: '', phone: '', email: '', address: '', contact: '', category: 'Agua', status: 'active' });
+    const [form, setForm] = useState(emptyProveedorForm);
     const rowsPerPage = 8;
 
     useEffect(() => { loadData(); }, []);
@@ -23,17 +33,18 @@ export default function Proveedores() {
     const loadData = async () => {
         setIsLoading(true);
         try { setProveedores(await proveedorService.getProveedores()); }
-        catch (e) { Swal.fire('Error', 'No se pudieron cargar los proveedores', 'error'); }
+        catch { Swal.fire('Error', 'No se pudieron cargar los proveedores', 'error'); }
         finally { setIsLoading(false); }
     };
 
     const handleSave = async () => {
         if (!form.name || !form.rif) { Swal.fire('Campos requeridos', 'Nombre y RIF son obligatorios', 'warning'); return; }
+        if (!form.email?.trim()) { Swal.fire('Campos requeridos', 'El correo de contacto es obligatorio', 'warning'); return; }
         try {
             if (editingItem) { await proveedorService.updateProveedor(editingItem.id, form); }
             else { await proveedorService.addProveedor(form); }
             setShowModal(false); setEditingItem(null);
-            setForm({ name: '', rif: '', phone: '', email: '', address: '', contact: '', category: 'Agua', status: 'active' });
+            setForm(emptyProveedorForm());
             await loadData();
             Swal.fire({ icon: 'success', title: '¡Guardado!', timer: 1500, showConfirmButton: false });
         } catch (e) { Swal.fire('Error', e.message, 'error'); }
@@ -46,13 +57,13 @@ export default function Proveedores() {
 
     const openEdit = (item) => {
         setEditingItem(item);
-        setForm({ name: item.name||'', rif: item.rif||'', phone: item.phone||'', email: item.email||'', address: item.address||'', contact: item.contact||'', category: item.category||'Agua', status: item.status||'active' });
+        setForm({ name: item.name||'', rif: item.rif||'', phone: item.phone||'', email: item.email||'', address: item.address||'', category: item.category||'Agua', status: item.status||'active' });
         setShowModal(true);
     };
 
     const filtered = proveedores.filter(p => {
         const q = searchTerm.toLowerCase();
-        const matchSearch = !q || p.name?.toLowerCase().includes(q) || p.rif?.includes(q) || p.contact?.toLowerCase().includes(q);
+        const matchSearch = !q || p.name?.toLowerCase().includes(q) || p.rif?.includes(q) || p.email?.toLowerCase().includes(q);
         const matchStatus = statusFilter === 'all' || p.status === statusFilter;
         return matchSearch && matchStatus;
     });
@@ -70,7 +81,7 @@ export default function Proveedores() {
                 <div className="title-section"><h1>Proveedores</h1><p>Gestión de proveedores y distribuidores</p></div>
                 <div className="module-header-actions">
                     <button className="btn-mod" onClick={loadData}><FiRefreshCw /> Actualizar</button>
-                    <button className="btn-mod primary" onClick={()=>{setEditingItem(null);setForm({name:'',rif:'',phone:'',email:'',address:'',contact:'',category:'Agua',status:'active'});setShowModal(true);}}>
+                    <button className="btn-mod primary" onClick={()=>{setEditingItem(null);setForm(emptyProveedorForm());setShowModal(true);}}>
                         <FiPlus /> Nuevo Proveedor
                     </button>
                 </div>
@@ -83,7 +94,7 @@ export default function Proveedores() {
             </div>
 
             <div className="mod-controls">
-                <div className="search-box"><FiSearch className="search-icon" /><input className="search-input" placeholder="Buscar por nombre, RIF o contacto..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} /></div>
+                <div className="search-box"><FiSearch className="search-icon" /><input className="search-input" placeholder="Buscar por nombre, RIF o correo..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} /></div>
                 <select className="filter-select" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}>
                     <option value="all">Todos</option><option value="active">Activos</option><option value="inactive">Inactivos</option>
                 </select>
@@ -95,19 +106,24 @@ export default function Proveedores() {
                 ) : (
                     <>
                         <table className="mod-table">
-                            <thead><tr><th>Proveedor</th><th>RIF</th><th>Contacto</th><th>Categoría</th><th>Estado</th><th>Acciones</th></tr></thead>
+                            <thead><tr><th>Proveedor</th><th>RIF</th><th>Teléfono</th><th>Dirección</th><th>Estado</th><th>Acciones</th></tr></thead>
                             <tbody>
                                 {paginated.map((p,i)=>(
                                     <tr key={p.id}>
                                         <td>
                                             <div className="mod-cell-info">
                                                 <div className={`mod-avatar ${COLORS[i%COLORS.length]}`}>{p.name?.charAt(0)?.toUpperCase()||'?'}</div>
-                                                <div className="cell-text"><p style={{fontWeight:600}}>{p.name}</p><p className="cell-sub">{p.email||'Sin email'}</p></div>
+                                                <div className="cell-text"><p style={{fontWeight:600}}>{p.name}</p><p className="cell-sub">{p.email?.trim() ? p.email : 'Sin correo'}</p></div>
                                             </div>
                                         </td>
                                         <td style={{fontWeight:600,fontSize:'13px'}}>{p.rif||'—'}</td>
-                                        <td><div style={{fontSize:'13px'}}><div style={{display:'flex',alignItems:'center',gap:'5px'}}><FiPhone style={{color:'var(--muted)',fontSize:'12px'}} />{p.phone||'—'}</div><div style={{display:'flex',alignItems:'center',gap:'5px',marginTop:'2px',color:'var(--muted)'}}><FiMail style={{fontSize:'12px'}} />{p.contact||'—'}</div></div></td>
-                                        <td><span className="mod-badge" style={{background:'#faf5ff',color:'#7e22ce'}}>{p.category}</span></td>
+                                        <td><div style={{display:'flex',alignItems:'center',gap:'5px',fontSize:'13px'}}><FiPhone style={{color:'var(--muted)',fontSize:'12px'}} />{p.phone||'—'}</div></td>
+                                        <td style={{ maxWidth: '240px', fontSize: '13px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', color: 'var(--muted)' }}>
+                                                <FiMapPin style={{ flexShrink: 0, marginTop: '2px', fontSize: '14px' }} />
+                                                <span title={p.address || ''}>{(p.address && p.address.trim()) ? p.address : '—'}</span>
+                                            </div>
+                                        </td>
                                         <td><span className={`mod-badge ${p.status}`}>{p.status==='active'?'Activo':'Inactivo'}</span></td>
                                         <td><div className="mod-actions"><button onClick={()=>openEdit(p)}><FiEdit2 /></button><button className="del" onClick={()=>handleDelete(p.id)}><FiTrash2 /></button></div></td>
                                     </tr>
@@ -132,16 +148,13 @@ export default function Proveedores() {
                             </div>
                             <div className="mod-form-row">
                                 <div className="mod-form-group"><label>Teléfono</label><input value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} placeholder="0212-1234567" /></div>
-                                <div className="mod-form-group"><label>Email</label><input type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="correo@proveedor.com" /></div>
+                                <div className="mod-form-group"><label>Correo (contacto)</label><input type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="correo@proveedor.com" required /></div>
                             </div>
                             <div className="mod-form-group"><label>Dirección</label><input value={form.address} onChange={e=>setForm({...form,address:e.target.value})} placeholder="Dirección completa" /></div>
-                            <div className="mod-form-row">
-                                <div className="mod-form-group"><label>Persona de Contacto</label><input value={form.contact} onChange={e=>setForm({...form,contact:e.target.value})} placeholder="Nombre del contacto" /></div>
-                                <div className="mod-form-group"><label>Categoría</label>
-                                    <select value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>
-                                        <option>Agua</option><option>Envases</option><option>Equipos</option><option>Insumos</option><option>Transporte</option><option>Otro</option>
-                                    </select>
-                                </div>
+                            <div className="mod-form-group"><label>Categoría</label>
+                                <select value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>
+                                    <option>Agua</option><option>Envases</option><option>Equipos</option><option>Insumos</option><option>Transporte</option><option>Otro</option>
+                                </select>
                             </div>
                             <div className="mod-modal-footer"><button className="btn-mod" onClick={()=>setShowModal(false)}>Cancelar</button><button className="btn-mod primary" onClick={handleSave}><FiCheck /> Guardar</button></div>
                         </div>

@@ -27,6 +27,13 @@ import {
 } from 'react-icons/fi';
 import Swal from 'sweetalert2';
 import * as configService from './services/config.service';
+
+const escHtml = (t) =>
+    String(t)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
 import '../assets/css/configuracion.css';
 
 const CONFIG_MENU = [
@@ -442,65 +449,81 @@ export default function Configuracion() {
               <button 
                 className="btn-add-bottle"
                 onClick={async () => {
+                  let sucursalesList = [];
+                  try {
+                    sucursalesList = await configService.getSucursales();
+                  } catch {
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudieron cargar las sucursales.' });
+                    return;
+                  }
+                  const roleOpts = configService.ROL_OPCIONES.map(
+                    (r) => `<option value="${r.id}">${escHtml(r.nombre)}</option>`
+                  ).join('');
+                  const sucOpts = sucursalesList.map(
+                    (s) => `<option value="${s.id}">${escHtml(s.nombre)}</option>`
+                  ).join('');
+
                   const { value: formValues } = await Swal.fire({
-                    title: '<span style="color: var(--text); font-family: var(--font-title);">Agregar Nuevo Usuario</span>',
+                    title: '<span style="color: var(--text); font-family: var(--font-title);">Agregar nuevo usuario</span>',
                     html: `
                       <div style="text-align: left; margin-top: 20px;">
-                        <label style="font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px; display: block;">Nombre Completo</label>
+                        <label style="font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px; display: block;">Nombre completo</label>
                         <input id="swal-input-name" class="swal2-input" style="margin: 0 0 16px 0; width: 100%; box-sizing: border-box;" placeholder="Ej: Pedro Pérez">
-                        
-                        <label style="font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px; display: block;">Correo Electrónico</label>
+                        <label style="font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px; display: block;">Cédula</label>
+                        <input id="swal-input-cedula" class="swal2-input" style="margin: 0 0 16px 0; width: 100%; box-sizing: border-box;" placeholder="V-12345678">
+                        <label style="font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px; display: block;">Correo</label>
                         <input id="swal-input-email" type="email" class="swal2-input" style="margin: 0 0 16px 0; width: 100%; box-sizing: border-box;" placeholder="ejemplo@correo.com">
-                        
-                        <label style="font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px; display: block;">Rol del Usuario</label>
-                        <select id="swal-input-role" class="swal2-input" style="margin: 0; width: 100%; box-sizing: border-box;">
-                          <option value="Gerente">Gerente</option>
-                          <option value="Empleado">Empleado</option>
-                        </select>
+                        <label style="font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px; display: block;">Contraseña</label>
+                        <input id="swal-input-pass" type="password" class="swal2-input" style="margin: 0 0 16px 0; width: 100%; box-sizing: border-box;" placeholder="Mín. 8 caracteres, mayúsculas, minúsculas y números">
+                        <label style="font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px; display: block;">Rol</label>
+                        <select id="swal-input-role" class="swal2-input" style="margin: 0 0 16px 0; width: 100%; box-sizing: border-box;">${roleOpts}</select>
+                        <label style="font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px; display: block;">Sucursal</label>
+                        <select id="swal-input-sucursal" class="swal2-input" style="margin: 0; width: 100%; box-sizing: border-box;">${sucOpts}</select>
                       </div>
                     `,
                     focusConfirm: false,
                     showCancelButton: true,
-                    confirmButtonText: 'Crear Usuario',
+                    confirmButtonText: 'Crear usuario',
                     cancelButtonText: 'Cancelar',
                     confirmButtonColor: 'var(--accent)',
                     cancelButtonColor: 'var(--muted)',
                     preConfirm: () => {
-                      const name = document.getElementById('swal-input-name').value;
-                      const email = document.getElementById('swal-input-email').value;
-                      const role = document.getElementById('swal-input-role').value;
-                      
-                      if (!name || !email) {
-                        Swal.showValidationMessage('Nombre y correo son obligatorios');
+                      const name = document.getElementById('swal-input-name').value.trim();
+                      const cedula = document.getElementById('swal-input-cedula').value.trim();
+                      const email = document.getElementById('swal-input-email').value.trim();
+                      const password = document.getElementById('swal-input-pass').value;
+                      const rolId = document.getElementById('swal-input-role').value;
+                      const sucursalId = document.getElementById('swal-input-sucursal').value;
+                      if (!name || !cedula || !email) {
+                        Swal.showValidationMessage('Nombre, cédula y correo son obligatorios');
                         return false;
                       }
-                      if (!email.includes('@')) {
-                        Swal.showValidationMessage('Correo electrónico no válido');
+                      if (password.length < 8) {
+                        Swal.showValidationMessage('La contraseña debe tener al menos 8 caracteres');
                         return false;
                       }
-                      return { name, email, role };
+                      if (!sucursalId) {
+                        Swal.showValidationMessage('Selecciona una sucursal');
+                        return false;
+                      }
+                      return { name, cedula, email, password, rolId, sucursalId };
                     }
                   });
 
                   if (formValues) {
                     setIsLoading(true);
                     try {
-                      const newUsers = [...users, {
-                        id: Date.now(),
-                        ...formValues,
-                        status: 'active'
-                      }];
-                      await configService.saveUsers(newUsers);
-                      setUsers(newUsers);
+                      await configService.createUsuario(formValues);
+                      setUsers(await configService.getUsers());
                       Swal.fire({
                         icon: 'success',
-                        title: '¡Usuario Creado!',
-                        text: `${formValues.name} ha sido registrado con éxito.`,
+                        title: 'Usuario creado',
+                        text: `${formValues.name} ha sido registrado.`,
                         timer: 2000,
                         showConfirmButton: false
                       });
                     } catch (error) {
-                      Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo crear el usuario.' });
+                      Swal.fire({ icon: 'error', title: 'Error', text: error.message || 'No se pudo crear el usuario.' });
                     } finally {
                       setIsLoading(false);
                     }
@@ -527,7 +550,7 @@ export default function Configuracion() {
                       <td>
                         <div className="user-info-cell">
                           <div className="user-avatar-placeholder">
-                            {u.name.substring(0, 2).toUpperCase()}
+                            {(u.name || '?').substring(0, 2).toUpperCase()}
                           </div>
                           <div>
                             <p style={{ fontWeight: 600 }}>{u.name}</p>
@@ -561,12 +584,11 @@ export default function Configuracion() {
                               if (result.isConfirmed) {
                                 setIsLoading(true);
                                 try {
-                                  const newUsers = users.filter(user => user.id !== u.id);
-                                  await configService.saveUsers(newUsers);
-                                  setUsers(newUsers);
+                                  await configService.deleteUsuario(u.id);
+                                  setUsers(await configService.getUsers());
                                   Swal.fire({ icon: 'success', title: 'Eliminado', timer: 1500, showConfirmButton: false });
                                 } catch (error) {
-                                  Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo eliminar el usuario.' });
+                                  Swal.fire({ icon: 'error', title: 'Error', text: error.message || 'No se pudo eliminar el usuario.' });
                                 } finally {
                                   setIsLoading(false);
                                 }

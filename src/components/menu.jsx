@@ -2,14 +2,11 @@ import {
     FiHome,
     FiUsers,
     FiPackage,
-    FiTruck,
-    FiMap,
     FiBarChart2,
     FiSettings,
     FiShoppingCart,
     FiUserCheck,
     FiClock,
-    FiTool,
     FiChevronLeft,
     FiChevronRight,
     FiMenu
@@ -23,14 +20,11 @@ const MENU_GERENTE = [
     { id: 'home',        icon: FiHome,        label: 'Dashboard',   link: '/gerente/home' },
     { id: 'clientes',    icon: FiUsers,       label: 'Clientes',    link: '/gerente/clientes' },
     { id: 'botellones',  icon: FiPackage,     label: 'Botellones',  link: '/gerente/botellones' },
-    { id: 'entregas',    icon: FiTruck,       label: 'Entregas',    link: '/gerente/entregas' },
     { id: 'ventas',      icon: FiShoppingCart,label: 'Ventas',      link: '/gerente/ventas' },
     { id: 'empleados',   icon: FiUserCheck,   label: 'Empleados',   link: '/gerente/empleados' },
     { id: 'historial',   icon: FiClock,       label: 'Historial',   link: '/gerente/historial' },
 
     { id: 'proveedores', icon: FiUserCheck,   label: 'Proveedores', link: '/gerente/proveedores' },
-    { id: 'servicios',   icon: FiTool,        label: 'Servicios',   link: '/gerente/servicios' },
-    { id: 'rutas',       icon: FiMap,         label: 'Rutas',       link: '/gerente/rutas' },
     { id: 'reportes',    icon: FiBarChart2,   label: 'Reportes',    link: '/gerente/reportes' },
 ]
 
@@ -38,7 +32,6 @@ const MENU_EMPLEADO = [
     { id: 'home',       icon: FiHome,         label: 'Dashboard',   link: '/empleado/home' },
     { id: 'clientes',   icon: FiUsers,        label: 'Clientes',    link: '/empleado/clientes' },
     { id: 'botellones', icon: FiPackage,      label: 'Botellones',  link: '/empleado/botellones' },
-    { id: 'entregas',   icon: FiTruck,        label: 'Entregas',    link: '/empleado/entregas' },
     { id: 'ventas',     icon: FiShoppingCart, label: 'Ventas',      link: '/empleado/ventas' },
     { id: 'historial',  icon: FiClock,        label: 'Historial',   link: '/empleado/historial' },
 

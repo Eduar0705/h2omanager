@@ -12,7 +12,6 @@ import {
 import * as ventaService from './services/ventas.service';
 import * as clientService from './services/clientes.service';
 import * as botellonService from './services/botellones.service';
-import * as entregaService from './services/entrega.service';
 import * as configService from './services/config.service';
 import '../assets/css/reportes.css';
 
@@ -24,7 +23,6 @@ export default function Reportes() {
     const [clients, setClients] = useState([]);
     const [inventory, setInventory] = useState([]);
     const [history, setHistory] = useState([]);
-    const [entregas, setEntregas] = useState([]);
     const [config, setConfig] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -33,13 +31,13 @@ export default function Reportes() {
     const loadData = async () => {
         setIsLoading(true);
         try {
-            const [s, c, inv, hist, ent, conf] = await Promise.all([
+            const [s, c, inv, hist, conf] = await Promise.all([
                 ventaService.getSales(), clientService.getClients(),
                 botellonService.getInventory(), botellonService.getHistory(),
-                entregaService.getEntregas(), configService.getCurrencyConfig()
+                configService.getCurrencyConfig()
             ]);
             setSales(s || []); setClients(c || []); setInventory(inv || []);
-            setHistory(hist || []); setEntregas(ent || []); setConfig(conf);
+            setHistory(hist || []); setConfig(conf);
         } catch (e) { console.error('Error loading report data:', e); }
         finally { setIsLoading(false); }
     };
@@ -49,9 +47,8 @@ export default function Reportes() {
     const totalBottlesDelivered = history
         .filter(m => m.type === 'out')
         .reduce((a, m) => a + m.amount, 0);
-    const completedDeliveries = entregas.filter(e => e.status === 'completada').length;
-    const totalDeliveries = entregas.length || 1;
-    const routeEfficiency = Math.round((completedDeliveries / totalDeliveries) * 100);
+    const totalSalesCount = sales.length || 1;
+    const routeEfficiency = Math.round((totalBottlesDelivered / totalSalesCount) * 10);
 
     // ─── Monthly sales chart data ───
     const monthlySales = useMemo(() => {

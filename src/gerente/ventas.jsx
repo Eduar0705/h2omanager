@@ -1,8 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { 
-    FiTruck, 
     FiMapPin, 
-    FiUserPlus, 
     FiUser,
     FiSearch, 
     FiShoppingCart, 
@@ -13,61 +11,18 @@ import {
     FiPlus, 
     FiMinus, 
     FiTrash2,
-    FiPrinter,
-    FiNavigation
+    FiPrinter
 } from 'react-icons/fi';
 import Swal from 'sweetalert2';
-import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import * as clientService from './services/clientes.service';
 import * as botellonService from './services/botellones.service';
 import * as ventaService from './services/ventas.service';
 import * as configService from './services/config.service';
 import '../assets/css/ventas.css';
 
-// Fix default marker icon for Leaflet + bundlers
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-});
-
-// Custom marker icon
-const deliveryIcon = new L.Icon({
-    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-});
-
-// Component to handle map click events
-function MapClickHandler({ onMapClick }) {
-    useMapEvents({
-        click(e) {
-            onMapClick(e.latlng);
-        },
-    });
-    return null;
-}
-
-// Component to fly map to a new center
-function FlyToLocation({ center }) {
-    const map = useMap();
-    useEffect(() => {
-        if (center) {
-            map.flyTo(center, 16, { duration: 1.5 });
-        }
-    }, [center, map]);
-    return null;
-}
-
 const STEPS = [
-    { id: 1, label: 'Tipo Entrega', icon: FiTruck },
-    { id: 2, label: 'Cliente', icon: FiUserPlus },
+    { id: 1, label: 'Venta Local', icon: FiMapPin },
+    { id: 2, label: 'Cliente', icon: FiUser },
     { id: 3, label: 'Productos', icon: FiShoppingCart },
     { id: 4, label: 'Pago', icon: FiDollarSign },
     { id: 5, label: 'Confirmación', icon: FiCheck }
@@ -159,11 +114,8 @@ export default function VentasWizard() {
     const [config, setConfig] = useState({ exchangeRate: 54.50 });
 
     // Order State
-    const [deliveryType, setDeliveryType] = useState(null); // 'local' | 'delivery'
-    const [clientMode, setClientMode] = useState('registered'); // 'registered' | 'unregistered'
+    const [clientMode] = useState('registered');
     const [selectedClient, setSelectedClient] = useState(null);
-    const [newClientCedula, setNewClientCedula] = useState('');
-    const [newClientName, setNewClientName] = useState('');
     const [cart, setCart] = useState([]);
     const [paymentMethod, setPaymentMethod] = useState(null);
     const [searchClient, setSearchClient] = useState('');
@@ -184,12 +136,6 @@ export default function VentasWizard() {
         mixedBanco: { pago_movil: '', transferencia: '' },
         mixedRef: { pago_movil: '', transferencia: '' },
     });
-
-    // Delivery map state
-    const [deliveryCoords, setDeliveryCoords] = useState(null);
-    const [deliveryAddress, setDeliveryAddress] = useState('');
-    const [mapCenter, setMapCenter] = useState(null);
-    const [isLocating, setIsLocating] = useState(false);
 
     useEffect(() => {
         loadInitialData();
@@ -214,26 +160,11 @@ export default function VentasWizard() {
     };
 
     // Form Controls
-    const nextStep = () => {
-        // Handle un-registered client creation dynamically
-        if (currentStep === 2 && clientMode === 'unregistered') {
-            const tempClient = { 
-                id: `TEMP-${Date.now()}`, 
-                name: newClientName, 
-                cedula: newClientCedula,
-                type: 'Residencial',
-                isTemp: true
-            };
-            setSelectedClient(tempClient);
-        }
-        setCurrentStep(prev => Math.min(prev + 1, 5));
-    };
+    const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 5));
     const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
 
-    const isStep1Valid = deliveryType === 'local' || (deliveryType === 'delivery' && deliveryCoords !== null);
-    const isStep2Valid = clientMode === 'registered' 
-        ? selectedClient !== null 
-        : (newClientCedula.trim().length > 0 && newClientName.trim().length > 0);
+    const isStep1Valid = true;
+    const isStep2Valid = selectedClient !== null;
     const isStep3Valid = cart.length > 0;
 
     // Validate reference: exactly 6 numeric digits
@@ -268,84 +199,30 @@ export default function VentasWizard() {
         paymentMethod === 'mixto' ? isMixedValid() : isSingleMethodValid()
     );
 
-    // Reverse geocode to get address from coordinates
-    const reverseGeocode = async (lat, lng) => {
-        try {
-            const res = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-                { headers: { 'Accept-Language': 'es' } }
-            );
-            const data = await res.json();
-            return data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-        } catch {
-            return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-        }
-    };
-
-    // Handle map click: place marker + get address
-    const handleMapClick = async (latlng) => {
-        setDeliveryCoords([latlng.lat, latlng.lng]);
-        const addr = await reverseGeocode(latlng.lat, latlng.lng);
-        setDeliveryAddress(addr);
-    };
-
-    // Request browser geolocation
-    const requestLocation = () => {
-        setIsLocating(true);
-        if (!navigator.geolocation) {
-            Swal.fire('Error', 'Tu navegador no soporta geolocalización', 'error');
-            setIsLocating(false);
-            return;
-        }
-        navigator.geolocation.getCurrentPosition(
-            async (pos) => {
-                const coords = [pos.coords.latitude, pos.coords.longitude];
-                setMapCenter(coords);
-                setDeliveryCoords(coords);
-                const addr = await reverseGeocode(coords[0], coords[1]);
-                setDeliveryAddress(addr);
-                setIsLocating(false);
-            },
-            (err) => {
-                console.warn('Geolocation error:', err);
-                // Default to a generic center if denied
-                setMapCenter([10.4806, -66.9036]); // Caracas
-                setIsLocating(false);
-            },
-            { enableHighAccuracy: true, timeout: 10000 }
-        );
-    };
-
-    // Request location when delivery is selected
-    useEffect(() => {
-        if (deliveryType === 'delivery' && !mapCenter) {
-            requestLocation();
-        }
-    }, [deliveryType]);
-
     // Cart Handlers
     const addToCart = (product) => {
+        const cartKey = product.cartKey || `${product.id}`;
         setCart(prev => {
-            const existing = prev.find(item => item.id === product.id);
+            const existing = prev.find(item => item.cartKey === cartKey);
             if (existing) {
-                // if (existing.qty >= product.stock) return prev; // Removed strict stock check for testing
-                return prev.map(item => item.id === product.id ? { ...item, qty: item.qty + 1 } : item);
+                if (existing.qty >= Number(product.stock || 0)) return prev;
+                return prev.map(item => item.cartKey === cartKey ? { ...item, qty: item.qty + 1 } : item);
             }
-            // if (product.stock <= 0) return prev; // Removed strict stock check 
-            return [...prev, { ...product, qty: 1, price: product.size * 1.5 }]; // Mock price calculation
+            if (Number(product.stock || 0) <= 0) return prev;
+            return [...prev, { ...product, cartKey, qty: 1, price: Number(product.price || 0) }];
         });
     };
 
-    const removeFromCart = (id) => {
-        setCart(prev => prev.filter(item => item.id !== id));
+    const removeFromCart = (cartKey) => {
+        setCart(prev => prev.filter(item => item.cartKey !== cartKey));
     };
 
-    const updateQty = (id, delta) => {
+    const updateQty = (cartKey, delta) => {
         setCart(prev => prev.map(item => {
-            if (item.id === id) {
+            if (item.cartKey === cartKey) {
                 const newQty = item.qty + delta;
                 if (newQty <= 0) return item;
-                // if (newQty > item.stock) return item; // Removed check
+                if (newQty > Number(item.stock || 0)) return item;
                 return { ...item, qty: newQty };
             }
             return item;
@@ -372,7 +249,7 @@ export default function VentasWizard() {
         try {
             await ventaService.createSale({
                 client: selectedClient,
-                type: deliveryType,
+                type: 'local',
                 items: cart,
                 totalUSD: cartTotalUSD,
                 totalVES: cartTotalVES,
@@ -385,11 +262,7 @@ export default function VentasWizard() {
                 confirmButtonColor: 'var(--accent)'
             }).then(() => {
                 // Reset Wizard
-                setDeliveryType(null);
-                setClientMode('registered');
                 setSelectedClient(null);
-                setNewClientName('');
-                setNewClientCedula('');
                 setCart([]);
                 setPaymentMethod(null);
                 setPaymentDetails({
@@ -398,13 +271,10 @@ export default function VentasWizard() {
                     mixedBanco: { pago_movil: '', transferencia: '' },
                     mixedRef: { pago_movil: '', transferencia: '' },
                 });
-                setDeliveryCoords(null);
-                setDeliveryAddress('');
-                setMapCenter(null);
                 setCurrentStep(1);
             });
         } catch (error) {
-            Swal.fire('Error', 'No se pudo procesar la venta', error);
+            Swal.fire('Error', error?.message || 'No se pudo procesar la venta', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -419,132 +289,18 @@ export default function VentasWizard() {
     const renderStep1 = () => (
         <div className="wizard-panel">
             <div className="panel-header">
-                <h2>¿Cómo será la entrega?</h2>
-                <p>Selecciona si el cliente retirará en tienda o requiere despacho.</p>
+                <h2>Tipo de venta</h2>
+                <p>Este módulo registra únicamente ventas locales.</p>
             </div>
             <div className="type-selector">
                 <div
-                    className={`type-card ${deliveryType === 'local' ? 'selected' : ''}`}
-                    onClick={() => setDeliveryType('local')}
+                    className="type-card selected"
                 >
                     <FiMapPin className="type-icon" />
                     <h3>Compra Local</h3>
                     <p>El cliente retira en la planta</p>
                 </div>
-                <div
-                    className={`type-card ${deliveryType === 'delivery' ? 'selected' : ''}`}
-                    onClick={() => setDeliveryType('delivery')}
-                >
-                    <FiTruck className="type-icon" />
-                    <h3>Servicio Delivery</h3>
-                    <p>Despacho a domicilio</p>
-                </div>
             </div>
-
-            {/* Mini-mapa para delivery */}
-            {deliveryType === 'delivery' && (
-                <div style={{
-                    marginTop: '20px',
-                    borderRadius: '14px',
-                    overflow: 'hidden',
-                    border: '1px solid #e2e8f0',
-                    background: '#fff',
-                    animation: 'fadeIn 0.35s ease',
-                }}>
-                    <div style={{
-                        padding: '16px 20px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        borderBottom: '1px solid #f1f5f9',
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div style={{
-                                width: '36px', height: '36px', borderRadius: '10px',
-                                background: '#eff6ff', display: 'flex', alignItems: 'center',
-                                justifyContent: 'center', color: '#3b82f6', fontSize: '18px',
-                            }}>
-                                <FiMapPin />
-                            </div>
-                            <div>
-                                <p style={{ margin: 0, fontWeight: 700, fontSize: '14px', color: '#1e293b' }}>
-                                    Dirección de entrega
-                                </p>
-                                <p style={{ margin: 0, fontSize: '12px', color: '#94a3b8' }}>
-                                    Toca el mapa para fijar la ubicación
-                                </p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={requestLocation}
-                            disabled={isLocating}
-                            style={{
-                                display: 'flex', alignItems: 'center', gap: '6px',
-                                padding: '8px 14px', border: '1px solid #e2e8f0',
-                                borderRadius: '8px', background: '#fff', cursor: 'pointer',
-                                fontSize: '13px', fontWeight: 600, color: '#3b82f6',
-                                transition: 'all 0.15s',
-                            }}
-                        >
-                            <FiNavigation style={{
-                                animation: isLocating ? 'spin 1s linear infinite' : 'none'
-                            }} />
-                            {isLocating ? 'Localizando...' : 'Mi ubicación'}
-                        </button>
-                    </div>
-
-                    {/* Map container */}
-                    <div style={{ height: '280px', position: 'relative' }}>
-                        {mapCenter ? (
-                            <MapContainer
-                                center={mapCenter}
-                                zoom={15}
-                                style={{ height: '100%', width: '100%' }}
-                                zoomControl={true}
-                            >
-                                <TileLayer
-                                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                />
-                                <MapClickHandler onMapClick={handleMapClick} />
-                                <FlyToLocation center={mapCenter} />
-                                {deliveryCoords && (
-                                    <Marker position={deliveryCoords} icon={deliveryIcon} />
-                                )}
-                            </MapContainer>
-                        ) : (
-                            <div style={{
-                                height: '100%', display: 'flex', flexDirection: 'column',
-                                alignItems: 'center', justifyContent: 'center',
-                                background: '#f8fafc', color: '#94a3b8', gap: '12px',
-                            }}>
-                                <FiNavigation style={{ fontSize: '28px', animation: 'spin 1s linear infinite' }} />
-                                <p style={{ margin: 0, fontSize: '14px' }}>Solicitando permiso de ubicación...</p>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Address display */}
-                    {deliveryAddress && (
-                        <div style={{
-                            padding: '14px 20px',
-                            borderTop: '1px solid #f1f5f9',
-                            display: 'flex', alignItems: 'flex-start', gap: '10px',
-                            background: '#f0fdf4',
-                        }}>
-                            <FiCheck style={{ color: '#22c55e', fontSize: '18px', marginTop: '2px', flexShrink: 0 }} />
-                            <div>
-                                <p style={{ margin: 0, fontWeight: 600, fontSize: '13px', color: '#15803d' }}>
-                                    Ubicación seleccionada
-                                </p>
-                                <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#4b5563', lineHeight: '1.4' }}>
-                                    {deliveryAddress}
-                                </p>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
 
             <div className="wizard-footer">
                 <div />
@@ -564,61 +320,7 @@ export default function VentasWizard() {
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', margin: '0 0 24px 0' }}>
                 Seleccionar Cliente
             </h2>
-
-            {/* ── Toggle buttons ── */}
-            <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
-                <button
-                    onClick={() => { setClientMode('registered'); setSelectedClient(null); }}
-                    style={{
-                        flex: 1,
-                        height: '88px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '10px',
-                        border: clientMode === 'registered' ? '2px solid #3b82f6' : '1px solid #dde3ec',
-                        borderRadius: '10px',
-                        background: clientMode === 'registered' ? '#eff6ff' : '#fff',
-                        color: clientMode === 'registered' ? '#3b82f6' : '#64748b',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                    }}
-                >
-                    <FiUser style={{ fontSize: '22px' }} />
-                    Cliente Registrado
-                </button>
-
-                <button
-                    onClick={() => { setClientMode('unregistered'); setSelectedClient(null); }}
-                    style={{
-                        flex: 1,
-                        height: '88px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '10px',
-                        border: clientMode === 'unregistered' ? '2px solid #3b82f6' : '1px solid #dde3ec',
-                        borderRadius: '10px',
-                        background: clientMode === 'unregistered' ? '#eff6ff' : '#fff',
-                        color: clientMode === 'unregistered' ? '#3b82f6' : '#64748b',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                    }}
-                >
-                    <FiPlus style={{ fontSize: '22px' }} />
-                    Cliente No Registrado
-                </button>
-            </div>
-
-            {/* ── Content by mode ── */}
-            {clientMode === 'registered' ? (
-                <>
+            <>
                     {/* Search bar */}
                     <div style={{ position: 'relative', marginBottom: '20px' }}>
                         <FiSearch style={{
@@ -691,74 +393,7 @@ export default function VentasWizard() {
                             </div>
                         )}
                     </div>
-                </>
-            ) : (
-                /* Unregistered client form */
-                <div style={{
-                    background: '#f1f5f9', borderRadius: '12px', padding: '36px 40px',
-                    maxWidth: '520px', margin: '0 auto', textAlign: 'center',
-                    border: '1px solid #e2e8f0',
-                }}>
-                    <div style={{
-                        width: '56px', height: '56px', borderRadius: '50%',
-                        background: '#3b82f6', color: 'white', fontSize: '24px',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        margin: '0 auto 14px auto',
-                    }}>
-                        <FiUser />
-                    </div>
-                    <h3 style={{ margin: '0 0 6px 0', fontSize: '20px', fontWeight: '700', color: '#1e293b' }}>
-                        Datos del Cliente
-                    </h3>
-                    <p style={{ margin: '0 0 28px 0', color: '#64748b', fontSize: '13px' }}>
-                        Ingresa los datos básicos para esta venta
-                    </p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', textAlign: 'left' }}>
-                        <div>
-                            <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>
-                                Cédula *
-                            </label>
-                            <input
-                                type="text"
-                                placeholder="Ej: 20123456"
-                                value={newClientCedula}
-                                onChange={e => setNewClientCedula(e.target.value)}
-                                maxLength={9}
-                                style={{
-                                    width: '100%', boxSizing: 'border-box',
-                                    padding: '12px 14px', border: '1px solid #dde3ec',
-                                    borderRadius: '8px', fontSize: '14px', outline: 'none',
-                                    background: 'white',
-                                }}
-                            />
-                        </div>
-                        <div>
-                            <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>
-                                Nombre Completo *
-                            </label>
-                            <input
-                                type="text"
-                                placeholder="Ej: Juan Pérez"
-                                value={newClientName}
-                                maxLength={40}
-                                onChange={e => {
-                                    // Solo permite letras y espacios
-                                    const value = e.target.value;
-                                    if (/^[a-zA-Z\s]*$/.test(value)) {
-                                        setNewClientName(value);
-                                    }
-                                }}
-                                style={{
-                                    width: '100%', boxSizing: 'border-box',
-                                    padding: '12px 14px', border: '1px solid #dde3ec',
-                                    borderRadius: '8px', fontSize: '14px', outline: 'none',
-                                    background: 'white',
-                                }}
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
+            </>
 
             <div className="wizard-footer" style={{ marginTop: '30px' }}>
                 <button className="btn-wizard btn-wizard-back" onClick={prevStep}>Anterior</button>
@@ -775,17 +410,17 @@ export default function VentasWizard() {
                 <div className="products-grid">
                     {inventory.map(item => (
                         <div className="product-card" key={item.id}>
-                            <span className="bottle-badge">{item.size}L</span>
+                            <span className="bottle-badge">{item.sku || 'ITEM'}</span>
                             <div className="product-icon-wrap"><FiShoppingCart /></div>
                             <div className="product-info">
-                                <h4>Botellón {item.size}L</h4>
-                                <p className="product-price">${(item.size * 1.5).toFixed(2)}</p>
-                                <p className="product-price-bs">Bs. {(item.size * 1.5 * (config?.exchangeRate || 54.50)).toFixed(2)}</p>
-                                <p className="product-stock">Stock: 10{/*item.stock*/}</p>
+                                <h4>{item.name}</h4>
+                                <p className="product-price">${Number(item.price || 0).toFixed(2)}</p>
+                                <p className="product-price-bs">Bs. {(Number(item.price || 0) * (config?.exchangeRate || 54.50)).toFixed(2)}</p>
+                                <p className="product-stock">Stock: {Number(item.stock || 0)}</p>
                             </div>
                             <button 
                                 className="btn-add-product" 
-                                onClick={() => addToCart({ ...item, title: `Botellón ${item.size}L` })}
+                                onClick={() => addToCart({ ...item, title: item.name })}
                             >
                                 <FiPlus /> Agregar
                             </button>
@@ -799,18 +434,18 @@ export default function VentasWizard() {
                         {cart.length === 0 ? (
                             <p className="td-muted" style={{ textAlign: 'center' }}>Carrito vacío</p>
                         ) : cart.map(item => (
-                            <div className="cart-item" key={item.id}>
+                            <div className="cart-item" key={item.cartKey || item.id}>
                                 <div className="cart-item-header">
                                     <span className="cart-item-title">{item.title}</span>
                                     <span className="cart-item-price">${item.price.toFixed(2)} c/u</span>
                                 </div>
                                 <div className="cart-item-actions">
                                     <div className="qty-controls">
-                                        <button className="btn-qty" onClick={() => updateQty(item.id, -1)}><FiMinus /></button>
+                                        <button className="btn-qty" onClick={() => updateQty(item.cartKey || item.id, -1)}><FiMinus /></button>
                                         <span style={{ fontWeight: 600, width: '20px', textAlign: 'center' }}>{item.qty}</span>
-                                        <button className="btn-qty" onClick={() => updateQty(item.id, 1)}><FiPlus /></button>
+                                        <button className="btn-qty" onClick={() => updateQty(item.cartKey || item.id, 1)}><FiPlus /></button>
                                     </div>
-                                    <button className="btn-remove" onClick={() => removeFromCart(item.id)}><FiTrash2 /></button>
+                                    <button className="btn-remove" onClick={() => removeFromCart(item.cartKey || item.id)}><FiTrash2 /></button>
                                 </div>
                             </div>
                         ))}
@@ -1107,10 +742,7 @@ export default function VentasWizard() {
                         <p>Fecha: {new Date().toLocaleString('es-VE')}</p>
                         <p>Cliente: {selectedClient?.name}</p>
                         <p>C.I: {selectedClient?.cedula}</p>
-                        <p>Tipo: {deliveryType === 'local' ? 'Retiro en Tienda' : 'Despacho/Delivery'}</p>
-                        {deliveryType === 'delivery' && deliveryAddress && (
-                            <p>Dirección: {deliveryAddress}</p>
-                        )}
+                        <p>Tipo: Venta Local</p>
                     </div>
                     
                     <table className="receipt-table">
@@ -1162,11 +794,7 @@ export default function VentasWizard() {
 
             <div className="wizard-footer">
                 <button className="btn-wizard btn-wizard-back" onClick={() => {
-                    setDeliveryType(null);
-                    setClientMode('registered');
                     setSelectedClient(null);
-                    setNewClientName('');
-                    setNewClientCedula('');
                     setCart([]);
                     setPaymentMethod(null);
                     setPaymentDetails({
@@ -1175,9 +803,6 @@ export default function VentasWizard() {
                         mixedBanco: { pago_movil: '', transferencia: '' },
                         mixedRef: { pago_movil: '', transferencia: '' },
                     });
-                    setDeliveryCoords(null);
-                    setDeliveryAddress('');
-                    setMapCenter(null);
                     setCurrentStep(1);
                 }}><FiPlus /> Nueva Venta</button>
                 <button className="btn-wizard btn-wizard-next" disabled={isLoading} onClick={handleConfirmSale} style={{ background: '#10b981' }}>

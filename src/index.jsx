@@ -52,7 +52,7 @@ export default function Index() {
         <div className="stats-bar">
             {[
             { value: '600+', label: 'Botellones en stock' },
-            { value: '48',     label: 'Entregas hoy' },
+            { value: '48',     label: 'Ventas hoy' },
             { value: '312',    label: 'Clientes activos' },
             { value: '99%',    label: 'Uptime del sistema' },
             ].map((s, i) => (

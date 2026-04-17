@@ -1,61 +1,17 @@
 import { useState, useEffect } from 'react';
-import {
-    FiSearch,
-    FiRefreshCw,
-    FiShoppingCart,
-    FiDollarSign,
-    FiTruck,
-    FiMapPin,
-    FiClock,
-    FiX,
-    FiChevronLeft,
-    FiChevronRight,
-    FiSmartphone,
-    FiCreditCard,
-    FiPlus,
-    FiHash,
-    FiUser,
-    FiCalendar
-} from 'react-icons/fi';
+import { FiSearch, FiRefreshCw, FiClock, FiX, FiChevronLeft, FiChevronRight, FiHash, FiUser, FiCalendar, FiCreditCard } from 'react-icons/fi';
 import * as ventaService from './services/ventas.service';
-import * as configService from './services/config.service';
 import '../assets/css/historial.css';
 
-const PAYMENT_LABELS = {
-    efectivo_usd: 'Efectivo USD',
-    efectivo_ves: 'Efectivo Bs',
-    pago_movil: 'Pago Móvil',
-    transferencia: 'Transferencia',
-    punto: 'Punto de Venta',
-    mixto: 'Pago Mixto',
-};
-
-const PAYMENT_ICONS = {
-    efectivo_usd: FiDollarSign,
-    efectivo_ves: FiDollarSign,
-    pago_movil: FiSmartphone,
-    transferencia: FiCreditCard,
-    punto: FiCreditCard,
-    mixto: FiPlus,
-};
-
 export default function Historial() {
-    const [sales, setSales] = useState([]);
-    const [config, setConfig] = useState(null);
+    const [docs, setDocs] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-
-    // Filters
     const [searchTerm, setSearchTerm] = useState('');
-    const [payFilter, setPayFilter] = useState('all');
-    const [typeFilter, setTypeFilter] = useState('all');
-    const [dateFilter, setDateFilter] = useState('all'); // all, today, week, month
-
-    // Pagination
+    const [estadoFilter, setEstadoFilter] = useState('all');
+    const [tipoDocFilter, setTipoDocFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
+    const [selectedDoc, setSelectedDoc] = useState(null);
     const rowsPerPage = 10;
-
-    // Detail modal
-    const [selectedSale, setSelectedSale] = useState(null);
 
     useEffect(() => {
         loadData();
@@ -64,12 +20,8 @@ export default function Historial() {
     const loadData = async () => {
         setIsLoading(true);
         try {
-            const [salesData, configData] = await Promise.all([
-                ventaService.getSales(),
-                configService.getCurrencyConfig(),
-            ]);
-            setSales(salesData || []);
-            setConfig(configData);
+            const data = await ventaService.getSalesHistory();
+            setDocs(data || []);
         } catch (err) {
             console.error('Error loading historial:', err);
         } finally {
@@ -77,244 +29,144 @@ export default function Historial() {
         }
     };
 
-    // ─── Date helpers ─────────────
-    const isToday = (dateStr) => {
-        const d = new Date(dateStr);
-        const now = new Date();
-        return d.toDateString() === now.toDateString();
-    };
-
-    const isThisWeek = (dateStr) => {
-        const d = new Date(dateStr);
-        const now = new Date();
-        const startOfWeek = new Date(now);
-        startOfWeek.setDate(now.getDate() - now.getDay());
-        startOfWeek.setHours(0, 0, 0, 0);
-        return d >= startOfWeek;
-    };
-
-    const isThisMonth = (dateStr) => {
-        const d = new Date(dateStr);
-        const now = new Date();
-        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    };
-
     const formatDate = (dateStr) => {
-        const d = new Date(dateStr);
-        return d.toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' });
+        const d = new Date(String(dateStr || '').replace(' ', 'T'));
+        return Number.isNaN(d.getTime())
+            ? String(dateStr || '—')
+            : d.toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' });
     };
 
     const formatTime = (dateStr) => {
-        const d = new Date(dateStr);
-        return d.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', hour12: true });
+        const d = new Date(String(dateStr || '').replace(' ', 'T'));
+        return Number.isNaN(d.getTime())
+            ? '—'
+            : d.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', hour12: true });
     };
 
-    // ─── Filter logic ──────────────
-    const filteredSales = sales.filter(s => {
-        // Search
+    const filteredDocs = docs.filter((d) => {
         const q = searchTerm.toLowerCase();
-        const matchSearch = !q
-            || s.id?.toLowerCase().includes(q)
-            || s.client?.name?.toLowerCase().includes(q)
-            || s.client?.cedula?.includes(q);
-
-        // Payment method
-        const matchPay = payFilter === 'all' || s.paymentMethod === payFilter;
-
-        // Type
-        const matchType = typeFilter === 'all' || s.type === typeFilter;
-
-        // Date
-        let matchDate = true;
-        if (dateFilter === 'today') matchDate = isToday(s.date);
-        else if (dateFilter === 'week') matchDate = isThisWeek(s.date);
-        else if (dateFilter === 'month') matchDate = isThisMonth(s.date);
-
-        return matchSearch && matchPay && matchType && matchDate;
+        const matchSearch =
+            !q ||
+            String(d.serieCorrelativo || '').toLowerCase().includes(q) ||
+            String(d.cliente || '').toLowerCase().includes(q) ||
+            String(d.sucursal || '').toLowerCase().includes(q);
+        const matchEstado = estadoFilter === 'all' || d.estado === estadoFilter;
+        const matchTipo = tipoDocFilter === 'all' || d.tipoDoc === tipoDocFilter;
+        return matchSearch && matchEstado && matchTipo;
     });
 
-    // ─── Stats ──────────────────────
-    const totalSalesCount = filteredSales.length;
-    const totalUSD = filteredSales.reduce((acc, s) => acc + (s.totalUSD || 0), 0);
-    const totalVES = filteredSales.reduce((acc, s) => acc + (s.totalVES || 0), 0);
-    const deliveryCount = filteredSales.filter(s => s.type === 'delivery').length;
+    const totalPages = Math.ceil(filteredDocs.length / rowsPerPage);
+    const paginated = filteredDocs.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
-    // ─── Pagination ─────────────────
-    const totalPages = Math.ceil(filteredSales.length / rowsPerPage);
-    const paginated = filteredSales.slice(
-        (currentPage - 1) * rowsPerPage,
-        currentPage * rowsPerPage
-    );
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, estadoFilter, tipoDocFilter]);
 
-    // Reset page when filters change
-    useEffect(() => { setCurrentPage(1); }, [searchTerm, payFilter, typeFilter, dateFilter]);
+    const totalDocs = filteredDocs.length;
+    const totalMonto = filteredDocs.reduce((acc, d) => acc + Number(d.total || 0), 0);
 
-    // ─── Render ─────────────────────
     return (
         <div className="historial-container">
-            {/* HEADER */}
             <div className="historial-header">
                 <div className="title-section">
-                    <h1>Historial de Ventas</h1>
-                    <p>Consulta y detalle de todas las ventas procesadas</p>
+                    <h1>Historial de Documentos</h1>
                 </div>
                 <button className="btn-refresh" onClick={loadData} disabled={isLoading}>
                     <FiRefreshCw className={isLoading ? 'spin' : ''} /> Actualizar
                 </button>
             </div>
 
-            {/* STATS */}
             <div className="historial-stats">
                 <div className="hist-stat">
-                    <div className="hist-stat-icon blue"><FiShoppingCart /></div>
+                    <div className="hist-stat-icon blue"><FiHash /></div>
                     <div className="hist-stat-info">
-                        <p className="stat-value">{totalSalesCount}</p>
-                        <p className="stat-label">Ventas</p>
+                        <p className="stat-value">{totalDocs}</p>
+                        <p className="stat-label">Documentos</p>
                     </div>
                 </div>
                 <div className="hist-stat">
-                    <div className="hist-stat-icon green"><FiDollarSign /></div>
+                    <div className="hist-stat-icon green"><FiCreditCard /></div>
                     <div className="hist-stat-info">
-                        <p className="stat-value">${totalUSD.toFixed(2)}</p>
-                        <p className="stat-label">Total USD</p>
-                    </div>
-                </div>
-                <div className="hist-stat">
-                    <div className="hist-stat-icon purple"><FiDollarSign /></div>
-                    <div className="hist-stat-info">
-                        <p className="stat-value">Bs. {totalVES.toFixed(2)}</p>
-                        <p className="stat-label">Total Bs</p>
-                    </div>
-                </div>
-                <div className="hist-stat">
-                    <div className="hist-stat-icon amber"><FiTruck /></div>
-                    <div className="hist-stat-info">
-                        <p className="stat-value">{deliveryCount}</p>
-                        <p className="stat-label">Delivery</p>
+                        <p className="stat-value">${totalMonto.toFixed(2)}</p>
+                        <p className="stat-label">Total</p>
                     </div>
                 </div>
             </div>
 
-            {/* CONTROLS */}
             <div className="historial-controls">
                 <div className="search-box">
                     <FiSearch className="search-icon" />
                     <input
                         type="text"
                         className="search-input"
-                        placeholder="Buscar por ID, cliente o cédula..."
+                        placeholder="Buscar por correlativo, cliente o sucursal..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <select className="filter-select" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)}>
-                    <option value="all">Todas las fechas</option>
-                    <option value="today">Hoy</option>
-                    <option value="week">Esta semana</option>
-                    <option value="month">Este mes</option>
-                </select>
-                <select className="filter-select" value={payFilter} onChange={(e) => setPayFilter(e.target.value)}>
-                    <option value="all">Todos los pagos</option>
-                    <option value="efectivo_usd">Efectivo USD</option>
-                    <option value="efectivo_ves">Efectivo Bs</option>
-                    <option value="pago_movil">Pago Móvil</option>
-                    <option value="transferencia">Transferencia</option>
-                    <option value="punto">Punto de Venta</option>
-                    <option value="mixto">Pago Mixto</option>
-                </select>
-                <select className="filter-select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+                <select className="filter-select" value={tipoDocFilter} onChange={(e) => setTipoDocFilter(e.target.value)}>
                     <option value="all">Todos los tipos</option>
-                    <option value="local">Local</option>
-                    <option value="delivery">Delivery</option>
+                    <option value="Factura">Factura</option>
+                    <option value="Nota de Crédito">Nota de Crédito</option>
+                </select>
+                <select className="filter-select" value={estadoFilter} onChange={(e) => setEstadoFilter(e.target.value)}>
+                    <option value="all">Todos los estados</option>
+                    {[...new Set(docs.map((d) => d.estado).filter(Boolean))].map((estado) => (
+                        <option key={estado} value={estado}>{estado}</option>
+                    ))}
                 </select>
             </div>
 
-            {/* TABLE */}
             <div className="historial-table-wrap">
-                {filteredSales.length === 0 ? (
+                {filteredDocs.length === 0 ? (
                     <div className="hist-empty">
                         <div className="hist-empty-icon"><FiClock /></div>
-                        <h3>{isLoading ? 'Cargando...' : 'Sin ventas registradas'}</h3>
-                        <p>{isLoading ? 'Obteniendo datos del historial' : 'Procesa tu primera venta para verla aquí'}</p>
+                        <h3>{isLoading ? 'Cargando...' : 'Sin documentos'}</h3>
+                        <p>{isLoading ? 'Obteniendo datos de la API' : 'No hay datos para los filtros aplicados'}</p>
                     </div>
                 ) : (
                     <>
                         <table className="historial-table">
                             <thead>
                                 <tr>
-                                    <th>ID</th>
+                                    <th>Correlativo</th>
                                     <th>Fecha</th>
                                     <th>Cliente</th>
+                                    <th>Sucursal</th>
                                     <th>Tipo</th>
-                                    <th>Método</th>
+                                    <th>Estado</th>
                                     <th style={{ textAlign: 'right' }}>Total</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {paginated.map(sale => {
-                                    const PayIcon = PAYMENT_ICONS[sale.paymentMethod] || FiDollarSign;
-                                    return (
-                                        <tr key={sale.id} onClick={() => setSelectedSale(sale)}>
-                                            <td><span className="sale-id-chip">{sale.id}</span></td>
-                                            <td>
-                                                <div className="sale-date">
-                                                    <span className="day">{formatDate(sale.date)}</span>
-                                                    <span className="time">{formatTime(sale.date)}</span>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    <div style={{
-                                                        width: '32px', height: '32px', borderRadius: '8px',
-                                                        background: 'var(--accent)', color: '#fff',
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        fontWeight: 700, fontSize: '12px', flexShrink: 0,
-                                                    }}>
-                                                        {sale.client?.name?.charAt(0)?.toUpperCase() || '?'}
-                                                    </div>
-                                                    <div>
-                                                        <p style={{ margin: 0, fontWeight: 600, fontSize: '13px' }}>
-                                                            {sale.client?.name || 'Cliente'}
-                                                        </p>
-                                                        <p style={{ margin: 0, fontSize: '11px', color: 'var(--muted)' }}>
-                                                            {sale.client?.cedula || '—'}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span className={`type-badge ${sale.type}`}>
-                                                    {sale.type === 'delivery' ? <><FiTruck /> Delivery</> : <><FiMapPin /> Local</>}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span className={`pay-badge ${sale.paymentMethod}`}>
-                                                    <PayIcon size={13} />
-                                                    {PAYMENT_LABELS[sale.paymentMethod] || sale.paymentMethod}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <div className="sale-amount">
-                                                    <span className="usd">${(sale.totalUSD || 0).toFixed(2)}</span>
-                                                    <span className="bs">Bs. {(sale.totalVES || 0).toFixed(2)}</span>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
+                                {paginated.map((doc) => (
+                                    <tr key={doc.id} onClick={() => setSelectedDoc(doc)}>
+                                        <td><span className="sale-id-chip">{doc.serieCorrelativo || `DOC-${doc.id}`}</span></td>
+                                        <td>
+                                            <div className="sale-date">
+                                                <span className="day">{formatDate(doc.fecha)}</span>
+                                                <span className="time">{formatTime(doc.fecha)}</span>
+                                            </div>
+                                        </td>
+                                        <td>{doc.cliente || '—'}</td>
+                                        <td>{doc.sucursal || '—'}</td>
+                                        <td>{doc.tipoDoc || '—'}</td>
+                                        <td>{doc.estado || '—'}</td>
+                                        <td style={{ textAlign: 'right', fontWeight: 600 }}>{Number(doc.total || 0).toFixed(2)}</td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
 
-                        {/* PAGINATION */}
                         <div className="historial-pagination">
                             <span className="page-info">
-                                {(currentPage - 1) * rowsPerPage + 1}–{Math.min(currentPage * rowsPerPage, filteredSales.length)} de {filteredSales.length}
+                                {(currentPage - 1) * rowsPerPage + 1}–{Math.min(currentPage * rowsPerPage, filteredDocs.length)} de {filteredDocs.length}
                             </span>
                             <div className="page-btns">
-                                <button disabled={currentPage <= 1} onClick={() => setCurrentPage(p => p - 1)}>
+                                <button disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => p - 1)}>
                                     <FiChevronLeft />
                                 </button>
-                                <button disabled={currentPage >= totalPages} onClick={() => setCurrentPage(p => p + 1)}>
+                                <button disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => p + 1)}>
                                     <FiChevronRight />
                                 </button>
                             </div>
@@ -323,74 +175,72 @@ export default function Historial() {
                 )}
             </div>
 
-            {/* ─── DETAIL MODAL ──────────────────────── */}
-            {selectedSale && (
-                <div className="hist-modal-overlay" onClick={() => setSelectedSale(null)}>
+            {selectedDoc && (
+                <div className="hist-modal-overlay" onClick={() => setSelectedDoc(null)}>
                     <div className="hist-modal" onClick={(e) => e.stopPropagation()}>
                         <div className="hist-modal-header">
-                            <h2>Detalle de Venta</h2>
-                            <button className="btn-close" onClick={() => setSelectedSale(null)}>
+                            <h2>Detalle de Documento</h2>
+                            <button className="btn-close" onClick={() => setSelectedDoc(null)}>
                                 <FiX />
                             </button>
                         </div>
                         <div className="hist-modal-body">
                             <div className="detail-grid">
                                 <div className="detail-item">
-                                    <span className="detail-label"><FiHash style={{ verticalAlign: 'middle' }} /> ID Venta</span>
-                                    <span className="detail-value">{selectedSale.id}</span>
+                                    <span className="detail-label"><FiHash style={{ verticalAlign: 'middle' }} /> Correlativo</span>
+                                    <span className="detail-value">{selectedDoc.serieCorrelativo || `DOC-${selectedDoc.id}`}</span>
                                 </div>
                                 <div className="detail-item">
                                     <span className="detail-label"><FiCalendar style={{ verticalAlign: 'middle' }} /> Fecha</span>
-                                    <span className="detail-value">{formatDate(selectedSale.date)} — {formatTime(selectedSale.date)}</span>
+                                    <span className="detail-value">{formatDate(selectedDoc.fecha)} — {formatTime(selectedDoc.fecha)}</span>
                                 </div>
                                 <div className="detail-item">
                                     <span className="detail-label"><FiUser style={{ verticalAlign: 'middle' }} /> Cliente</span>
-                                    <span className="detail-value">{selectedSale.client?.name || 'Cliente sin nombre'}</span>
+                                    <span className="detail-value">{selectedDoc.cliente || '—'}</span>
                                 </div>
                                 <div className="detail-item">
-                                    <span className="detail-label">Cédula</span>
-                                    <span className="detail-value">{selectedSale.client?.cedula || '—'}</span>
+                                    <span className="detail-label">Sucursal</span>
+                                    <span className="detail-value">{selectedDoc.sucursal || '—'}</span>
                                 </div>
                                 <div className="detail-item">
-                                    <span className="detail-label"><FiTruck style={{ verticalAlign: 'middle' }} /> Tipo</span>
-                                    <span className="detail-value">
-                                        <span className={`type-badge ${selectedSale.type}`}>
-                                            {selectedSale.type === 'delivery' ? 'Delivery' : 'Local'}
-                                        </span>
-                                    </span>
+                                    <span className="detail-label">Tipo</span>
+                                    <span className="detail-value">{selectedDoc.tipoDoc || '—'}</span>
                                 </div>
                                 <div className="detail-item">
-                                    <span className="detail-label"><FiCreditCard style={{ verticalAlign: 'middle' }} /> Método de Pago</span>
-                                    <span className="detail-value">
-                                        <span className={`pay-badge ${selectedSale.paymentMethod}`}>
-                                            {PAYMENT_LABELS[selectedSale.paymentMethod] || selectedSale.paymentMethod}
-                                        </span>
-                                    </span>
+                                    <span className="detail-label">Condiciones de pago</span>
+                                    <span className="detail-value">{selectedDoc.condicionesPago || '—'}</span>
                                 </div>
                             </div>
 
                             <h4 style={{ fontSize: '13px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.3px', margin: '0 0 10px' }}>
-                                Productos ({selectedSale.items?.length || 0})
+                                Detalles API ({selectedDoc.detalles?.length || 0})
                             </h4>
                             <div style={{ borderRadius: '10px', border: '1px solid var(--border)', overflow: 'hidden' }}>
                                 <table className="detail-items-table">
                                     <thead>
                                         <tr>
+                                            <th>Item</th>
                                             <th>Cant.</th>
-                                            <th>Descripción</th>
-                                            <th className="text-right">Precio</th>
-                                            <th className="text-right">Subtotal</th>
+                                            <th className="text-right">P. Unit</th>
+                                            <th className="text-right">IVA</th>
+                                            <th className="text-right">Total Línea</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {(selectedSale.items || []).map((item, idx) => (
-                                            <tr key={idx}>
-                                                <td style={{ fontWeight: 700 }}>{item.qty}</td>
-                                                <td>{item.title}</td>
-                                                <td className="text-right">${(item.price || 0).toFixed(2)}</td>
-                                                <td className="text-right" style={{ fontWeight: 600 }}>
-                                                    ${((item.price || 0) * (item.qty || 0)).toFixed(2)}
+                                        {(selectedDoc.detalles || []).length === 0 && (
+                                            <tr>
+                                                <td colSpan={5} style={{ textAlign: 'center', color: 'var(--muted)' }}>
+                                                    Sin líneas de detalle en la respuesta de la API.
                                                 </td>
+                                            </tr>
+                                        )}
+                                        {(selectedDoc.detalles || []).map((d) => (
+                                            <tr key={d.id}>
+                                                <td>{d.nombreItem || `Item ${d.itemId}`}</td>
+                                                <td>{Number(d.cantidad || 0)}</td>
+                                                <td className="text-right">{Number(d.precioUnitario || 0).toFixed(2)}</td>
+                                                <td className="text-right">{Number(d.ivaMonto || 0).toFixed(2)}</td>
+                                                <td className="text-right" style={{ fontWeight: 600 }}>{Number(d.totalLineas || 0).toFixed(2)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -399,20 +249,16 @@ export default function Historial() {
 
                             <div className="detail-totals">
                                 <div className="total-row">
-                                    <span>Subtotal USD</span>
-                                    <span>${(selectedSale.totalUSD || 0).toFixed(2)}</span>
+                                    <span>Subtotal</span>
+                                    <span>{Number(selectedDoc.subtotal || 0).toFixed(2)}</span>
                                 </div>
                                 <div className="total-row">
-                                    <span>Tasa de cambio</span>
-                                    <span>× Bs. {config?.exchangeRate || '—'}</span>
-                                </div>
-                                <div className="total-row">
-                                    <span>Total Bs</span>
-                                    <span>Bs. {(selectedSale.totalVES || 0).toFixed(2)}</span>
+                                    <span>IVA</span>
+                                    <span>{Number(selectedDoc.iva || 0).toFixed(2)}</span>
                                 </div>
                                 <div className="total-row grand">
-                                    <span>Total USD</span>
-                                    <span>${(selectedSale.totalUSD || 0).toFixed(2)}</span>
+                                    <span>Total</span>
+                                    <span>{Number(selectedDoc.total || 0).toFixed(2)}</span>
                                 </div>
                             </div>
                         </div>

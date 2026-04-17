@@ -1,23 +1,101 @@
 import { useState, useEffect } from 'react';
-import { 
-    FiUsers, 
-    FiSearch, 
-    FiPlus, 
-    FiChevronLeft, 
-    FiChevronRight, 
-    FiMoreVertical,
+import {
+    FiUsers,
+    FiSearch,
+    FiPlus,
+    FiChevronLeft,
+    FiChevronRight,
     FiEdit2,
     FiTrash2,
-    FiUser,
-    FiPhone,
-    FiMail,
-    FiMapPin,
-    FiRefreshCw
+    FiRefreshCw,
 } from 'react-icons/fi';
 import Swal from 'sweetalert2';
 import * as clientService from './services/clientes.service';
 import '../assets/css/clientes.css';
 import '../assets/css/configuracion.css'; // Reuse some global styles
+
+const mensajeError = (error, fallback) => {
+    if (error instanceof Error) return error.message;
+    if (typeof error === 'string' && error.trim()) return error;
+    return fallback;
+};
+
+const htmlFormularioCliente = `
+    <div class="swal-form swal-form-cliente">
+        <input id="swal-name" class="swal2-input" placeholder="Nombre / razón social">
+        <input id="swal-cedula" class="swal2-input" placeholder="Cédula / RIF">
+        <input id="swal-email" type="email" class="swal2-input" placeholder="Correo (solo referencia local)">
+        <input id="swal-phone" class="swal2-input" placeholder="Teléfono">
+        <input id="swal-address" class="swal2-input" placeholder="Dirección">
+        <select id="swal-type" class="swal2-input">
+            <option value="Residencial">Residencial</option>
+            <option value="Comercial">Comercial</option>
+        </select>
+        <input id="swal-saldo" type="number" step="0.01" min="0" class="swal2-input" placeholder="Saldo">
+        <input id="swal-limite" type="number" step="0.01" min="0" class="swal2-input" placeholder="Límite de crédito">
+        <input id="swal-dias" type="number" step="1" min="0" class="swal2-input" placeholder="Días de crédito">
+    </div>
+`;
+
+const leerFormularioCliente = () => {
+    const name = document.getElementById('swal-name')?.value?.trim() ?? '';
+    const cedula = document.getElementById('swal-cedula')?.value?.trim() ?? '';
+    const email = document.getElementById('swal-email')?.value?.trim() ?? '';
+    const phone = document.getElementById('swal-phone')?.value?.trim() ?? '';
+    const address = document.getElementById('swal-address')?.value?.trim() ?? '';
+    const type = document.getElementById('swal-type')?.value ?? 'Residencial';
+    const saldoRaw = document.getElementById('swal-saldo')?.value;
+    const limiteRaw = document.getElementById('swal-limite')?.value;
+    const diasRaw = document.getElementById('swal-dias')?.value;
+
+    if (!name || !cedula) {
+        Swal.showValidationMessage('Nombre y cédula / RIF son obligatorios');
+        return false;
+    }
+
+    const saldo = saldoRaw === '' || saldoRaw == null ? 0 : Number(saldoRaw);
+    if (Number.isNaN(saldo) || saldo < 0) {
+        Swal.showValidationMessage('Saldo inválido');
+        return false;
+    }
+
+    let limiteCredito = null;
+    if (limiteRaw !== '' && limiteRaw != null) {
+        limiteCredito = Number(limiteRaw);
+        if (Number.isNaN(limiteCredito) || limiteCredito < 0) {
+            Swal.showValidationMessage('Límite de crédito inválido');
+            return false;
+        }
+    }
+
+    let diasCredito = null;
+    if (diasRaw !== '' && diasRaw != null) {
+        diasCredito = parseInt(diasRaw, 10);
+        if (Number.isNaN(diasCredito) || diasCredito < 0) {
+            Swal.showValidationMessage('Días de crédito inválidos');
+            return false;
+        }
+    }
+
+    return { name, cedula, email, phone, address, type, saldo, limiteCredito, diasCredito };
+};
+
+const rellenarFormularioCliente = (c) => {
+    const set = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val ?? '';
+    };
+    set('swal-name', c.name);
+    set('swal-cedula', c.cedula);
+    set('swal-email', c.email);
+    set('swal-phone', c.phone);
+    set('swal-address', c.address);
+    const typeEl = document.getElementById('swal-type');
+    if (typeEl) typeEl.value = c.type === 'Comercial' ? 'Comercial' : 'Residencial';
+    set('swal-saldo', c.saldo != null ? String(c.saldo) : '0');
+    set('swal-limite', c.limiteCredito != null ? String(c.limiteCredito) : '');
+    set('swal-dias', c.diasCredito != null ? String(c.diasCredito) : '');
+};
 
 export default function Clientes() {
     const [clients, setClients] = useState([]);
@@ -39,8 +117,9 @@ export default function Clientes() {
         try {
             const data = await clientService.getClients();
             setClients(data);
+            
         } catch (error) {
-            Swal.fire('Error', 'No se pudieron cargar los clientes', 'error');
+            Swal.fire('Error', mensajeError(error, 'No se pudieron cargar los clientes'), 'error');
         } finally {
             setIsLoading(false);
         }
@@ -48,10 +127,13 @@ export default function Clientes() {
 
     // Filter Logic
     const filteredClients = clients.filter(c => {
-        const matchesSearch = 
-            c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            c.cedula?.includes(searchTerm);
+        const nombre = (c.name || '').toLowerCase();
+        const correo = (c.email || '').toLowerCase();
+        const q = searchTerm.toLowerCase();
+        const matchesSearch =
+            nombre.includes(q) ||
+            correo.includes(q) ||
+            (c.cedula && String(c.cedula).includes(searchTerm));
         
         const matchesType = typeFilter === 'all' || c.type === typeFilter;
         const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
@@ -76,38 +158,16 @@ export default function Clientes() {
 
     const handleAddClient = async () => {
         const { value: formValues } = await Swal.fire({
-            title: 'Agregar Nuevo Cliente',
-            html: `
-                <div class="swal-form">
-                    <input id="swal-name" class="swal2-input" placeholder="Nombre completo">
-                    <input id="swal-cedula" class="swal2-input" placeholder="Cédula / RIF">
-                    <input id="swal-email" type="email" class="swal2-input" placeholder="Correo electrónico">
-                    <input id="swal-phone" class="swal2-input" placeholder="Teléfono">
-                    <input id="swal-address" class="swal2-input" placeholder="Dirección">
-                    <select id="swal-type" class="swal2-input">
-                        <option value="Residencial">Residencial</option>
-                        <option value="Comercial">Comercial</option>
-                    </select>
-                </div>
-            `,
+            title: 'Agregar nuevo cliente',
+            html: htmlFormularioCliente,
             focusConfirm: false,
             showCancelButton: true,
             confirmButtonText: 'Guardar',
             cancelButtonText: 'Cancelar',
-            preConfirm: () => {
-                const name = document.getElementById('swal-name').value;
-                const cedula = document.getElementById('swal-cedula').value;
-                const email = document.getElementById('swal-email').value;
-                const phone = document.getElementById('swal-phone').value;
-                const address = document.getElementById('swal-address').value;
-                const type = document.getElementById('swal-type').value;
-
-                if (!name || !cedula) {
-                    Swal.showValidationMessage('Nombre y Cédula son obligatorios');
-                    return false;
-                }
-                return { name, cedula, email, phone, address, type };
-            }
+            didOpen: () => {
+                document.getElementById('swal-saldo').value = '0';
+            },
+            preConfirm: () => leerFormularioCliente(),
         });
 
         if (formValues) {
@@ -117,7 +177,47 @@ export default function Clientes() {
                 await loadClients();
                 Swal.fire('¡Éxito!', 'Cliente agregado correctamente', 'success');
             } catch (error) {
-                Swal.fire('Error', 'No se pudo agregar el cliente', 'error');
+                Swal.fire('Error', mensajeError(error, 'No se pudo agregar el cliente'), 'error');
+            } finally {
+                setIsLoading(false);
+            }
+        }
+    };
+
+    const handleEditClient = async (client) => {
+        const { value: formValues } = await Swal.fire({
+            title: 'Editar cliente',
+            html: htmlFormularioCliente,
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonText: 'Guardar cambios',
+            cancelButtonText: 'Cancelar',
+            didOpen: () => rellenarFormularioCliente(client),
+            preConfirm: () => leerFormularioCliente(),
+        });
+
+        if (formValues) {
+            setIsLoading(true);
+            try {
+                const payload = {
+                    name: formValues.name,
+                    cedula: formValues.cedula,
+                    phone: formValues.phone,
+                    address: formValues.address,
+                    type: formValues.type,
+                    saldo: formValues.saldo,
+                };
+                if (formValues.limiteCredito != null) {
+                    payload.limiteCredito = formValues.limiteCredito;
+                }
+                if (formValues.diasCredito != null) {
+                    payload.diasCredito = formValues.diasCredito;
+                }
+                await clientService.updateClient(client.id, payload);
+                await loadClients();
+                Swal.fire('Listo', 'Cliente actualizado correctamente', 'success');
+            } catch (error) {
+                Swal.fire('Error', mensajeError(error, 'No se pudo actualizar el cliente'), 'error');
             } finally {
                 setIsLoading(false);
             }
@@ -142,7 +242,7 @@ export default function Clientes() {
                 await loadClients();
                 Swal.fire('Eliminado', 'El cliente ha sido borrado', 'success');
             } catch (error) {
-                Swal.fire('Error', 'No se pudo eliminar el cliente', 'error');
+                Swal.fire('Error', mensajeError(error, 'No se pudo eliminar el cliente'), 'error');
             } finally {
                 setIsLoading(false);
             }
@@ -258,7 +358,7 @@ export default function Clientes() {
                                 <td>
                                     <div className="client-info-cell">
                                         <div className="client-avatar">
-                                            {client.name.substring(0, 2).toUpperCase()}
+                                            {(client.name || '?').substring(0, 2).toUpperCase()}
                                         </div>
                                         <div className="client-name-email">
                                             <p style={{ fontWeight: 600 }}>{client.name}</p>
@@ -275,8 +375,8 @@ export default function Clientes() {
                                         {client.type}
                                     </span>
                                 </td>
-                                <td style={{ fontWeight: 700, color: client.saldo > 0 ? '#ef4444' : '#22c55e' }}>
-                                    ${client.saldo?.toFixed(2)}
+                                <td style={{ fontWeight: 700, color: Number(client.saldo) > 0 ? '#ef4444' : '#22c55e' }}>
+                                    ${Number(client.saldo ?? 0).toFixed(2)}
                                 </td>
                                 <td>
                                     <span className={`badge status-${client.status}`}>
@@ -286,7 +386,14 @@ export default function Clientes() {
                                 </td>
                                 <td>
                                     <div style={{ display: 'flex', gap: '8px' }}>
-                                        <button className="btn-table-action" title="Editar"><FiEdit2 /></button>
+                                        <button
+                                            type="button"
+                                            className="btn-table-action"
+                                            title="Editar"
+                                            onClick={() => handleEditClient(client)}
+                                        >
+                                            <FiEdit2 />
+                                        </button>
                                         <button 
                                             className="btn-table-action delete" 
                                             onClick={() => handleDelete(client)}

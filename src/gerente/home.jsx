@@ -1,38 +1,42 @@
-import { FiRefreshCw, FiPackage, FiUsers, FiTruck, FiClock, FiPlus, FiUserPlus, FiMapPin, FiArrowRight } from "react-icons/fi";
+import { useState, useEffect } from "react";
+import { FiRefreshCw, FiPackage, FiUsers, FiClock, FiPlus, FiUserPlus } from "react-icons/fi";
 import { TbBottle } from "react-icons/tb";
 import { useNavigate } from "react-router-dom";
+import * as clientService from "./services/clientes.service";
 import "../assets/css/dashboard.css";
 
-const stats = [
-  { icon: FiPackage, color: "blue", value: 347, label: "Botellones Disponibles" },
-  { icon: FiUsers, color: "green", value: 128, label: "Clientes Activos" },
-  { icon: FiTruck, color: "orange", value: 24, label: "Entregas Hoy" },
-  { icon: FiClock, color: "red", value: 8, label: "Pendientes" },
-];
-
-const entregas = [
-  { cliente: "Juan Pérez", cantidad: 5, direccion: "Av. Principal #123", estado: "entregado" },
-  { cliente: "María García", cantidad: 3, direccion: "Calle 10 #45", estado: "en-camino" },
-  { cliente: "Carlos López", cantidad: 10, direccion: "Zona Industrial #78", estado: "pendiente" },
-  { cliente: "Ana Martínez", cantidad: 2, direccion: "Residencias Sol #12", estado: "entregado" },
-  { cliente: "Luis Ramírez", cantidad: 6, direccion: "Urb. Las Palmas #5", estado: "en-camino" },
-];
-
 const acciones = [
-  { icon: FiPlus, label: "Nueva Entrega", link: "/gerente/entregas" },
+  { icon: FiPlus, label: "Nueva Venta", link: "/gerente/ventas" },
   { icon: FiUserPlus, label: "Nuevo Cliente", link: "/gerente/clientes" },
   { icon: TbBottle, label: "Registrar Botellones", link: "/gerente/botellones" },
-  { icon: FiMapPin, label: "Planificar Ruta", link: "/gerente/rutas" },
 ];
-
-const estadoConfig = {
-  entregado: { label: "Entregado", cls: "badge-green" },
-  "en-camino": { label: "En camino", cls: "badge-orange" },
-  pendiente: { label: "Pendiente", cls: "badge-red" },
-};
 
 export default function HomeGere() {
   const navigate = useNavigate();
+  const [clientesActivos, setClientesActivos] = useState(0);
+
+  useEffect(() => {
+    let cancelado = false;
+    (async () => {
+      try {
+        const lista = await clientService.getClients();
+        const n = lista.filter((c) => c.status === "active").length;
+        if (!cancelado) setClientesActivos(n);
+      } catch {
+        if (!cancelado) setClientesActivos(0);
+      }
+    })();
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  const stats = [
+    { icon: FiPackage, color: "blue", value: 347, label: "Botellones Disponibles" },
+    { icon: FiUsers, color: "green", value: clientesActivos, label: "Clientes Activos" },
+    { icon: FiPlus, color: "orange", value: 24, label: "Ventas Hoy" },
+    { icon: FiClock, color: "red", value: 8, label: "Pendientes" },
+  ];
 
   return (
     <div className="dash">
@@ -68,47 +72,6 @@ export default function HomeGere() {
 
       {/* Bottom grid */}
       <div className="dash-grid">
-        {/* Entregas recientes */}
-        <div className="dash-card">
-          <div className="dash-card-header">
-            <h2>Entregas Recientes</h2>
-            <button
-              className="btn-ver"
-              onClick={() => navigate("/gerente/entregas")}
-            >
-              Ver todas <FiArrowRight />
-            </button>
-          </div>
-
-          <div className="table-wrap">
-            <table className="dash-table">
-              <thead>
-                <tr>
-                  <th>Cliente</th>
-                  <th>Cantidad</th>
-                  <th>Dirección</th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entregas.map((e, i) => (
-                  <tr key={i}>
-                    <td className="td-name">{e.cliente}</td>
-                    <td>{e.cantidad} botellones</td>
-                    <td className="td-muted">{e.direccion}</td>
-                    <td>
-                      <span className={`badge ${estadoConfig[e.estado].cls}`}>
-                        {estadoConfig[e.estado].label}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Acciones rápidas */}
         <div className="dash-card acciones-card">
           <div className="dash-card-header">
             <h2>Acciones Rápidas</h2>

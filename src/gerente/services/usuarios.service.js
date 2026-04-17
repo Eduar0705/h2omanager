@@ -1,22 +1,25 @@
 /**
- * Servicios de Proveedores - H2OManager
- * Conecta con api-h2o-manager (Laravel) /api/v1/proveedor
- *
- * La API persiste: razón social, RIF, contacto (correo), teléfono y dirección.
- * En la UI, `contacto` se muestra y edita como email. Categoría y estado extra no van al backend.
+ * Usuarios (empleados del sistema) — API Laravel /api/v1/usuario
+ * Requiere rol_id y sucursal_id. No hay endpoint público de roles: se usa catálogo alineado al seed de la API.
  */
 
 const USE_VITE_PROXY = import.meta.env.DEV;
 const PROD_API_ORIGIN = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 const BASE_URL = USE_VITE_PROXY ? '' : PROD_API_ORIGIN;
 
-const PROVEEDOR_PATH = USE_VITE_PROXY
-    ? '/api/v1/proveedor'
-    : `${PROD_API_ORIGIN}/api/v1/proveedor`;
+const USUARIO_PATH = USE_VITE_PROXY ? '/api/v1/usuario' : `${PROD_API_ORIGIN}/api/v1/usuario`;
+const SUCURSAL_PATH = USE_VITE_PROXY ? '/api/v1/sucursal' : `${PROD_API_ORIGIN}/api/v1/sucursal`;
+
+/** Debe coincidir con la tabla `rol` en la base de datos de api-h2o-manager */
+export const ROL_OPCIONES = [
+    { id: 1, nombre: 'Administrador' },
+    { id: 2, nombre: 'Gerente de Sucursal' },
+    { id: 3, nombre: 'Cajero' },
+    { id: 4, nombre: 'Operario de Planta' },
+];
 
 function resolvePaginationUrl(url) {
     if (!url) return null;
-
     if (/^https?:\/\//i.test(url)) {
         if (USE_VITE_PROXY) {
             try {
@@ -30,11 +33,9 @@ function resolvePaginationUrl(url) {
         }
         return url;
     }
-
     if (url.startsWith('/')) {
         return BASE_URL ? `${BASE_URL}${url}` : url;
     }
-
     if (BASE_URL) {
         return `${BASE_URL}/${url}`.replace(/([^:]\/)\/+/g, '$1');
     }
@@ -47,32 +48,43 @@ function requireApiConfig() {
     }
 }
 
-/** Respuesta API → modelo usado en pantallas (provedores.jsx) */
-const mapApiToUi = (row) => {
+export const mapUsuarioApiToUi = (row) => {
     if (row == null || typeof row !== 'object') {
-        throw new Error('Respuesta de proveedor inválida desde la API.');
+        throw new Error('Respuesta de usuario inválida desde la API.');
     }
-    const inactive = Boolean(row.deletedAt);
     return {
         id: row.id,
-        name: row.razonSocial ?? '',
-        rif: row.rif ?? '',
-        phone: row.telefono ?? '',
-        address: row.direccion ?? '',
-        email: row.contacto ?? '',
-        category: '—',
-        status: inactive ? 'inactive' : 'active',
+        name: row.nombre ?? '',
+        email: row.email ?? '',
+        cedula: row.cedula ?? '',
+        role: row.rol ?? '',
+        sucursal: row.sucursal ?? '',
+        phone: '',
+        status: row.deletedAt ? 'inactive' : 'active',
     };
 };
 
-/** Formulario UI → StoreProveedorRequest / cuerpo PATCH (`contacto` = correo) */
-const mapFormToApi = (form) => ({
-    razonSocial: form.name,
-    rif: form.rif,
-    contacto: (form.email || '').trim() || 'Sin especificar',
-    telefono: (form.phone || '').trim() || 'Sin especificar',
-    direccion: (form.address || '').trim() || 'Sin especificar',
-});
+function mapStoreBody(form) {
+    return {
+        nombre: form.name,
+        email: form.email,
+        password: form.password,
+        cedula: form.cedula,
+        rol_id: Number(form.rolId),
+        sucursal_id: Number(form.sucursalId),
+    };
+}
+
+function mapPatchBody(form) {
+    const p = {};
+    if (form.name != null && form.name !== '') p.nombre = form.name;
+    if (form.email != null && form.email !== '') p.email = form.email;
+    if (form.cedula != null && form.cedula !== '') p.cedula = form.cedula;
+    if (form.rolId != null && form.rolId !== '') p.rol_id = Number(form.rolId);
+    if (form.sucursalId != null && form.sucursalId !== '') p.sucursal_id = Number(form.sucursalId);
+    if (form.password && String(form.password).trim() !== '') p.password = form.password;
+    return p;
+}
 
 const defaultHeaders = {
     Accept: 'application/json',
@@ -118,63 +130,63 @@ async function apiGet(url) {
     return handleResponse(response);
 }
 
-async function fetchAllProveedoresFromApi() {
+async function fetchAllPages(basePathWithQuery) {
     const rows = [];
     const seen = new Set();
-    let nextUrl = resolvePaginationUrl(`${PROVEEDOR_PATH}?page=1`);
+    let nextUrl = resolvePaginationUrl(basePathWithQuery);
     let guard = 0;
     const maxPages = 500;
 
     while (nextUrl && guard < maxPages) {
         if (seen.has(nextUrl)) break;
         seen.add(nextUrl);
-
         const json = await apiGet(nextUrl);
         const chunk = Array.isArray(json.data) ? json.data : [];
-        rows.push(...chunk.map(mapApiToUi));
-
+        rows.push(...chunk);
         nextUrl = resolvePaginationUrl(json.links?.next);
         guard += 1;
     }
     return rows;
 }
 
-export const getProveedores = async () => {
+export const getUsuarios = async () => {
     requireApiConfig();
-    return await fetchAllProveedoresFromApi();
+    const raw = await fetchAllPages(`${USUARIO_PATH}?page=1`);
+    return raw.map(mapUsuarioApiToUi);
 };
 
-export const saveProveedores = async () => {
+export const getSucursales = async () => {
     requireApiConfig();
-    console.warn('saveProveedores: no soportado en la API; usa addProveedor, updateProveedor o deleteProveedor.');
-    return false;
+    const raw = await fetchAllPages(`${SUCURSAL_PATH}?page=1`);
+    return raw.map((s) => ({ id: s.id, nombre: s.nombre ?? '' }));
 };
 
-export const addProveedor = async (prov) => {
+export const createUsuario = async (form) => {
     requireApiConfig();
-    const response = await fetchWithNetworkHint(PROVEEDOR_PATH, {
+    const response = await fetchWithNetworkHint(USUARIO_PATH, {
         method: 'POST',
         headers: defaultHeaders,
-        body: JSON.stringify(mapFormToApi(prov)),
+        body: JSON.stringify(mapStoreBody(form)),
     });
     const body = await handleResponse(response);
-    return mapApiToUi(body.data ?? body);
+    return mapUsuarioApiToUi(body.data ?? body);
 };
 
-export const updateProveedor = async (id, data) => {
+export const updateUsuario = async (id, form) => {
     requireApiConfig();
-    const response = await fetchWithNetworkHint(`${PROVEEDOR_PATH}/${id}`, {
+    const response = await fetchWithNetworkHint(`${USUARIO_PATH}/${id}`, {
         method: 'PATCH',
         headers: defaultHeaders,
-        body: JSON.stringify(mapFormToApi(data)),
+        body: JSON.stringify(mapPatchBody(form)),
     });
-    const body = await handleResponse(response);
-    return mapApiToUi(body.data ?? body);
+    await handleResponse(response);
+    const fresh = await apiGet(`${USUARIO_PATH}/${id}`);
+    return mapUsuarioApiToUi(fresh.data ?? fresh);
 };
 
-export const deleteProveedor = async (id) => {
+export const deleteUsuario = async (id) => {
     requireApiConfig();
-    const response = await fetchWithNetworkHint(`${PROVEEDOR_PATH}/${id}`, {
+    const response = await fetchWithNetworkHint(`${USUARIO_PATH}/${id}`, {
         method: 'DELETE',
         headers: { Accept: 'application/json' },
     });
