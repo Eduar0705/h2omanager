@@ -253,9 +253,238 @@
   color: #475569;
   background: #f1f5f9;
 }
+.status-overlimit .status-spot {
+    background: #dc2626;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
+}
+
+.status-overlimit {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
 .status-delinquent {
   color: #991b1b;
   background: #fee2e2;
+}
+
+.btn-table-action.abono {
+  color: #0369a1;
+  border-color: #bae6fd;
+  background: #f0f9ff;
+}
+
+.btn-table-action.abono:hover {
+  background: #e0f2fe;
+}
+
+/* ── SEGMENTOS (listado / abonos) ─────────────────── */
+.clientes-segments {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.clientes-segment-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border, #e2e8f0);
+  background: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.clientes-segment-btn.active {
+  border-color: var(--accent, #0077cc);
+  background: rgba(0, 119, 204, 0.08);
+  color: var(--accent, #0077cc);
+}
+
+.clientes-abonos-panel {
+  animation: fadeIn 0.25s ease;
+}
+
+.clientes-abonos-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.clientes-abonos-sidebar {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.clientes-abonos-sidebar-head h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.clientes-abonos-sidebar-head p {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.clientes-abonos-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.clientes-abonos-list-item {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  margin-bottom: 8px;
+  text-align: left;
+  transition: all 0.15s;
+}
+
+.clientes-abonos-list-item:hover,
+.clientes-abonos-list-item.active {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.clientes-abonos-list-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: #1e293b;
+}
+
+.clientes-abonos-list-saldo {
+  font-weight: 700;
+  font-size: 13px;
+  color: #dc2626;
+}
+
+.clientes-abonos-list-empty {
+  font-size: 13px;
+  color: #94a3b8;
+  padding: 12px 0;
+}
+
+.clientes-abonos-main {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 24px;
+  min-height: 420px;
+}
+
+.clientes-abonos-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  color: #94a3b8;
+  gap: 12px;
+}
+
+.clientes-abonos-placeholder svg {
+  font-size: 48px;
+  opacity: 0.35;
+}
+
+.clientes-abonos-resumen {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.clientes-abonos-resumen h3 {
+  margin: 0 0 4px;
+}
+
+.clientes-abonos-resumen-stats {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.clientes-abonos-resumen-stats div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.clientes-abonos-resumen-stats span {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.clientes-abonos-resumen-stats strong {
+  font-size: 18px;
+}
+
+.clientes-abonos-cxc-wrap {
+  margin-bottom: 28px;
+}
+
+.clientes-abonos-cxc-wrap h4,
+.clientes-abonos-form h4 {
+  margin: 0 0 12px;
+  font-size: 15px;
+}
+
+.clientes-abonos-cxc-table {
+  margin-top: 8px;
+}
+
+.badge.cxc-estado-pendiente {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge.cxc-estado-vencida {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.clientes-abonos-form {
+  padding-top: 20px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.clientes-abonos-form .btn-add-client {
+  margin-top: 8px;
+}
+
+@media (max-width: 900px) {
+  .clientes-abonos-layout {
+    grid-template-columns: 1fr;
+  }
+  .clientes-abonos-sidebar {
+    max-height: none;
+  }
 }
 
 /* ── RESPONSIVE ────────────────────────────────────── */

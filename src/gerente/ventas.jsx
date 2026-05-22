@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { 
     FiMapPin, 
     FiUser,
@@ -14,10 +14,15 @@ import {
     FiPrinter
 } from 'react-icons/fi';
 import Swal from 'sweetalert2';
-import * as clientService from './services/clientes.service';
-import * as botellonService from './services/botellones.service';
+import { FiBox, FiTool, FiLayers } from 'react-icons/fi';
+import { TbBottle } from 'react-icons/tb';
+import { useAuth } from '../auth/AuthContext';
+import { getClients, puedeVenderCredito } from './services/clientes.service';
+import CreditoPagoPanel from './components/CreditoPagoPanel';
+import * as catalogoService from './services/catalogo-ventas.service';
 import * as ventaService from './services/ventas.service';
 import * as configService from './services/config.service';
+import { calcularTotalesCarrito } from './services/ventas-calculo';
 import '../assets/css/ventas.css';
 
 const STEPS = [
@@ -104,14 +109,25 @@ function BankRefFields({ banco, ref6, onBancoChange, onRefChange }) {
     );
 }
 
+const TIPO_ICON = {
+    PRODUCTO: TbBottle,
+    SERVICIO: FiLayers,
+    INSUMO: FiTool,
+};
+
 export default function VentasWizard() {
+    const { user } = useAuth();
+    const sucursalId = Number(user?.sucursalId ?? 1);
+
     const [currentStep, setCurrentStep] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
 
     // Data Sources
     const [clients, setClients] = useState([]);
-    const [inventory, setInventory] = useState([]);
-    const [config, setConfig] = useState({ exchangeRate: 54.50 });
+    const [catalog, setCatalog] = useState([]);
+    const [catalogFilter, setCatalogFilter] = useState('todos');
+    const [catalogSearch, setCatalogSearch] = useState('');
+    const [config, setConfig] = useState({ exchangeRate: 54.50, iva: 16 });
 
     // Order State
     const [clientMode] = useState('registered');
@@ -141,19 +157,46 @@ export default function VentasWizard() {
         loadInitialData();
     }, []);
 
+    /** Recargar IVA/tasa al entrar al paso de productos (por si cambió en Configuración). */
+    useEffect(() => {
+        if (currentStep !== 3) return;
+        configService.getCurrencyConfig().then((c) => {
+            if (c) setConfig((prev) => ({ ...prev, ...c }));
+        }).catch(() => {});
+    }, [currentStep]);
+
+    const loadCatalog = async (filterId = catalogFilter) => {
+        const filtro = catalogoService.TIPO_FILTROS.find((f) => f.id === filterId);
+        const tipo = filtro?.tipo ?? null;
+        const data = await catalogoService.getCatalogoVentas(sucursalId, tipo);
+        setCatalog(data);
+    };
+
     const loadInitialData = async () => {
         setIsLoading(true);
         try {
-            const [clientData, invData, confData] = await Promise.all([
-                clientService.getClients(),
-                botellonService.getInventory(),
-                configService.getCurrencyConfig()
+            const [clientData, confData] = await Promise.all([
+                getClients(),
+                configService.getCurrencyConfig(),
             ]);
             setClients(clientData);
-            setInventory(invData);
-            setConfig(confData || { exchangeRate: 54.50 });
+            setConfig(confData || { exchangeRate: 54.50, iva: 16 });
+            await loadCatalog('todos');
         } catch (error) {
-            console.error("Error loading data", error);
+            console.error('Error loading data', error);
+            Swal.fire('Error', error.message || 'No se pudo cargar el catálogo', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleCatalogFilterChange = async (filterId) => {
+        setCatalogFilter(filterId);
+        setIsLoading(true);
+        try {
+            await loadCatalog(filterId);
+        } catch (error) {
+            Swal.fire('Error', error.message || 'No se pudo filtrar el catálogo', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -167,12 +210,35 @@ export default function VentasWizard() {
     const isStep2Valid = selectedClient !== null;
     const isStep3Valid = cart.length > 0;
 
+    const ivaPorcentaje = Number(config?.iva ?? 0);
+    const cartTotals = useMemo(
+        () => calcularTotalesCarrito(cart, ivaPorcentaje),
+        [cart, ivaPorcentaje]
+    );
+    const cartSubtotalUSD = cartTotals.subtotal;
+    const cartIvaUSD = cartTotals.iva;
+    const cartTotalUSD = cartTotals.total;
+    const cartTotalVES = cartTotalUSD * (config?.exchangeRate || 54.5);
+
+    const calcMixedTotalBs = () => {
+        const rate = config?.exchangeRate || 1;
+        const mm = paymentDetails.mixedMethods;
+        return mm.efectivo_usd * rate + mm.efectivo_ves + mm.pago_movil + mm.transferencia + mm.punto;
+    };
+    const mixedTotalBs = calcMixedTotalBs();
+    const totalNeededBs = cartTotalUSD * (config?.exchangeRate || 1);
+    const mixedRemaining = totalNeededBs - mixedTotalBs;
+
     // Validate reference: exactly 6 numeric digits
     const isValidRef = (ref) => /^\d{6}$/.test(ref);
 
     // Check if a single method needs bank/ref and if valid
     const isSingleMethodValid = () => {
         if (!paymentMethod || paymentMethod === 'mixto') return false;
+        if (paymentMethod === 'credito') {
+            if (!selectedClient) return false;
+            return puedeVenderCredito(selectedClient, cartTotalUSD).ok;
+        }
         if (paymentMethod === 'pago_movil' || paymentMethod === 'transferencia') {
             return paymentDetails.banco.length > 0 && isValidRef(paymentDetails.referencia);
         }
@@ -200,16 +266,39 @@ export default function VentasWizard() {
     );
 
     // Cart Handlers
+    const maxQtyFor = (product) =>
+        product.controlaStock === false ? Infinity : Number(product.stock ?? 0);
+
     const addToCart = (product) => {
         const cartKey = product.cartKey || `${product.id}`;
-        setCart(prev => {
-            const existing = prev.find(item => item.cartKey === cartKey);
+        const maxQty = maxQtyFor(product);
+        setCart((prev) => {
+            const existing = prev.find((item) => item.cartKey === cartKey);
             if (existing) {
-                if (existing.qty >= Number(product.stock || 0)) return prev;
-                return prev.map(item => item.cartKey === cartKey ? { ...item, qty: item.qty + 1 } : item);
+                if (existing.qty >= maxQty) {
+                    if (product.controlaStock !== false) {
+                        Swal.fire('Stock insuficiente', `Solo hay ${maxQty} unidad(es) disponibles.`, 'warning');
+                    }
+                    return prev;
+                }
+                return prev.map((item) =>
+                    item.cartKey === cartKey ? { ...item, qty: item.qty + 1 } : item
+                );
             }
-            if (Number(product.stock || 0) <= 0) return prev;
-            return [...prev, { ...product, cartKey, qty: 1, price: Number(product.price || 0) }];
+            if (product.controlaStock !== false && maxQty <= 0) {
+                Swal.fire('Sin stock', 'Este artículo no tiene existencias.', 'warning');
+                return prev;
+            }
+            return [
+                ...prev,
+                {
+                    ...product,
+                    cartKey,
+                    qty: 1,
+                    price: Number(product.price || 0),
+                    gravaIva: product.gravaIva !== false,
+                },
+            ];
         });
     };
 
@@ -218,50 +307,59 @@ export default function VentasWizard() {
     };
 
     const updateQty = (cartKey, delta) => {
-        setCart(prev => prev.map(item => {
-            if (item.cartKey === cartKey) {
+        setCart((prev) =>
+            prev.map((item) => {
+                if (item.cartKey !== cartKey) return item;
                 const newQty = item.qty + delta;
                 if (newQty <= 0) return item;
-                if (newQty > Number(item.stock || 0)) return item;
+                const maxQty = maxQtyFor(item);
+                if (newQty > maxQty) return item;
                 return { ...item, qty: newQty };
-            }
-            return item;
-        }));
+            })
+        );
     };
 
-    const cartTotalUSD = cart.reduce((acc, curr) => acc + (curr.price * curr.qty), 0);
-    const cartTotalVES = cartTotalUSD * (config?.exchangeRate || 54.50);
-
-    // Calculate remaining for mixed payment
-    const calcMixedTotalBs = () => {
-        const rate = config?.exchangeRate || 1;
-        const mm = paymentDetails.mixedMethods;
-        return (mm.efectivo_usd * rate) + mm.efectivo_ves + mm.pago_movil + mm.transferencia + mm.punto;
-    };
-    const mixedTotalBs = calcMixedTotalBs();
-    const totalNeededBs = cartTotalUSD * (config?.exchangeRate || 1);
-    const mixedRemaining = totalNeededBs - mixedTotalBs;
-
-    // Removed unused handleCreateNewClient function
+    const filteredCatalog = catalog.filter((item) => {
+        const q = catalogSearch.trim().toLowerCase();
+        if (!q) return true;
+        return (
+            item.name?.toLowerCase().includes(q) ||
+            item.sku?.toLowerCase().includes(q) ||
+            item.tipoLabel?.toLowerCase().includes(q)
+        );
+    });
 
     const handleConfirmSale = async () => {
+        if (paymentMethod === 'credito') {
+            const check = puedeVenderCredito(selectedClient, cartTotalUSD);
+            if (!check.ok) {
+                Swal.fire('Crédito', check.reason, 'warning');
+                return;
+            }
+        }
         setIsLoading(true);
         try {
             await ventaService.createSale({
                 client: selectedClient,
                 type: 'local',
                 items: cart,
+                ivaPorcentaje,
                 totalUSD: cartTotalUSD,
                 totalVES: cartTotalVES,
-                paymentMethod
+                paymentMethod,
             });
             Swal.fire({
                 icon: 'success',
                 title: 'Venta Procesada',
                 text: 'La orden se ha registrado correctamente.',
                 confirmButtonColor: 'var(--accent)'
-            }).then(() => {
+            }).then(async () => {
                 // Reset Wizard
+                try {
+                    setClients(await getClients());
+                } catch {
+                    /* ignore refresh */
+                }
                 setSelectedClient(null);
                 setCart([]);
                 setPaymentMethod(null);
@@ -375,10 +473,26 @@ export default function VentasWizard() {
                                 }}>
                                     {getInitials(c.name)}
                                 </div>
-                                <div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ fontWeight: '700', fontSize: '14px', color: '#1e293b' }}>{c.name}</div>
                                     <div style={{ fontSize: '12px', color: '#64748b' }}>{c.cedula}</div>
-                                    <div style={{ fontSize: '12px', color: '#64748b' }}>{c.phone || c.telefono || ''}</div>
+                                    <div style={{ fontSize: '12px', color: '#64748b' }}>{c.phone || ''}</div>
+                                    {c.tieneCredito && (
+                                        <div style={{ fontSize: '11px', marginTop: '4px', color: '#0369a1' }}>
+                                            Crédito: ${c.creditoDisponible?.toFixed(2)} disp.
+                                            {c.saldo > 0 ? ` · Debe $${c.saldo.toFixed(2)}` : ''}
+                                        </div>
+                                    )}
+                                    {(c.status === 'delinquent' || c.status === 'overlimit') && (
+                                        <span style={{
+                                            display: 'inline-block', marginTop: '4px', fontSize: '10px',
+                                            fontWeight: 700, padding: '2px 6px', borderRadius: '4px',
+                                            background: c.status === 'overlimit' ? '#fef2f2' : '#fff7ed',
+                                            color: c.status === 'overlimit' ? '#b91c1c' : '#c2410c',
+                                        }}>
+                                            {c.status === 'overlimit' ? 'Sobregirado' : 'Moroso'}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         ))}
@@ -406,26 +520,81 @@ export default function VentasWizard() {
 
     const renderStep3 = () => (
         <div className="wizard-panel" style={{ background: 'transparent', border: 'none', padding: 0 }}>
+            <div className="ventas-catalog-toolbar">
+                <div className="ventas-tipo-filters" role="tablist">
+                    {catalogoService.TIPO_FILTROS.map((f) => (
+                        <button
+                            key={f.id}
+                            type="button"
+                            role="tab"
+                            aria-selected={catalogFilter === f.id}
+                            className={`ventas-tipo-chip ${catalogFilter === f.id ? 'active' : ''}`}
+                            style={{ '--chip-color': f.color }}
+                            onClick={() => handleCatalogFilterChange(f.id)}
+                        >
+                            {f.id === 'PRODUCTO' && <TbBottle />}
+                            {f.id === 'SERVICIO' && <FiLayers />}
+                            {f.id === 'INSUMO' && <FiTool />}
+                            {f.id === 'todos' && <FiBox />}
+                            {f.label}
+                        </button>
+                    ))}
+                </div>
+                <input
+                    type="search"
+                    className="ventas-catalog-search"
+                    placeholder="Buscar por nombre, SKU o tipo…"
+                    value={catalogSearch}
+                    onChange={(e) => setCatalogSearch(e.target.value)}
+                />
+            </div>
+
             <div className="products-layout">
                 <div className="products-grid">
-                    {inventory.map(item => (
-                        <div className="product-card" key={item.id}>
-                            <span className="bottle-badge">{item.sku || 'ITEM'}</span>
-                            <div className="product-icon-wrap"><FiShoppingCart /></div>
-                            <div className="product-info">
-                                <h4>{item.name}</h4>
-                                <p className="product-price">${Number(item.price || 0).toFixed(2)}</p>
-                                <p className="product-price-bs">Bs. {(Number(item.price || 0) * (config?.exchangeRate || 54.50)).toFixed(2)}</p>
-                                <p className="product-stock">Stock: {Number(item.stock || 0)}</p>
-                            </div>
-                            <button 
-                                className="btn-add-product" 
-                                onClick={() => addToCart({ ...item, title: item.name })}
+                    {filteredCatalog.map((item) => {
+                        const TipoIcon = TIPO_ICON[item.tipo] || FiShoppingCart;
+                        const sinStock = item.controlaStock !== false && Number(item.stock) <= 0;
+                        return (
+                            <div
+                                className={`product-card tipo-${item.tipo?.toLowerCase()} ${sinStock ? 'out-of-stock' : ''}`}
+                                key={item.id}
                             >
-                                <FiPlus /> Agregar
-                            </button>
+                                <span className={`product-tipo-badge tipo-${item.tipo?.toLowerCase()}`}>
+                                    {item.tipoLabel}
+                                </span>
+                                <span className="bottle-badge">{item.sku || '—'}</span>
+                                <div className="product-icon-wrap">
+                                    <TipoIcon />
+                                </div>
+                                <div className="product-info">
+                                    <h4>{item.name}</h4>
+                                    <p className="product-price">${Number(item.price || 0).toFixed(2)}</p>
+                                    <p className="product-price-bs">
+                                        Bs. {(Number(item.price || 0) * (config?.exchangeRate || 54.50)).toFixed(2)}
+                                    </p>
+                                    <p className="product-stock">
+                                        {item.controlaStock === false
+                                            ? 'Servicio — sin control de stock'
+                                            : `Stock: ${Number(item.stock || 0)}`}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    className="btn-add-product"
+                                    disabled={sinStock}
+                                    onClick={() => addToCart({ ...item, title: item.name })}
+                                >
+                                    <FiPlus /> {sinStock ? 'Sin stock' : 'Agregar'}
+                                </button>
+                            </div>
+                        );
+                    })}
+                    {filteredCatalog.length === 0 && (
+                        <div className="ventas-catalog-empty">
+                            <FiShoppingCart />
+                            <p>No hay artículos en esta categoría.</p>
                         </div>
-                    ))}
+                    )}
                 </div>
 
                 <div className="cart-sidebar">
@@ -436,7 +605,14 @@ export default function VentasWizard() {
                         ) : cart.map(item => (
                             <div className="cart-item" key={item.cartKey || item.id}>
                                 <div className="cart-item-header">
-                                    <span className="cart-item-title">{item.title}</span>
+                                    <div>
+                                        <span className="cart-item-title">{item.title}</span>
+                                        {item.tipoLabel && (
+                                            <span className={`cart-tipo-tag tipo-${item.tipo?.toLowerCase()}`}>
+                                                {item.tipoLabel}
+                                            </span>
+                                        )}
+                                    </div>
                                     <span className="cart-item-price">${item.price.toFixed(2)} c/u</span>
                                 </div>
                                 <div className="cart-item-actions">
@@ -452,10 +628,24 @@ export default function VentasWizard() {
                     </div>
 
                     <div className="cart-total-box">
-                        <span className="total-label">Total:</span>
-                        <div>
-                            <div className="total-amount">${cartTotalUSD.toFixed(2)}</div>
-                            <div className="total-bs">Bs. {cartTotalVES.toFixed(2)}</div>
+                        <div className="cart-total-lines">
+                            <div className="cart-total-row">
+                                <span>Subtotal</span>
+                                <span>${cartSubtotalUSD.toFixed(2)}</span>
+                            </div>
+                            {ivaPorcentaje > 0 && cartIvaUSD > 0 && (
+                                <div className="cart-total-row iva">
+                                    <span>IVA ({ivaPorcentaje}%)</span>
+                                    <span>${cartIvaUSD.toFixed(2)}</span>
+                                </div>
+                            )}
+                        </div>
+                        <div className="cart-total-main">
+                            <span className="total-label">Total:</span>
+                            <div>
+                                <div className="total-amount">${cartTotalUSD.toFixed(2)}</div>
+                                <div className="total-bs">Bs. {cartTotalVES.toFixed(2)}</div>
+                            </div>
                         </div>
                     </div>
 
@@ -479,12 +669,17 @@ export default function VentasWizard() {
         const rate = config?.exchangeRate || 1;
         const totalBs = cartTotalUSD * rate;
 
+        const creditCheck = selectedClient
+            ? puedeVenderCredito(selectedClient, cartTotalUSD)
+            : { ok: false, reason: 'Seleccione un cliente.' };
+
         const paymentMethods = [
             { id: 'efectivo_usd', label: 'Efectivo (USD)', icon: FiDollarSign },
             { id: 'efectivo_ves', label: 'Efectivo (Bs)', icon: FiDollarSign },
             { id: 'pago_movil', label: 'Pago Móvil', icon: FiSmartphone },
             { id: 'transferencia', label: 'Transferencia', icon: FiCreditCard },
             { id: 'punto', label: 'Punto de Venta', icon: FiCreditCard },
+            { id: 'credito', label: 'Crédito', icon: FiCreditCard },
             { id: 'mixto', label: 'Pago Mixto', icon: FiPlus }
         ];
 
@@ -512,9 +707,20 @@ export default function VentasWizard() {
                         <div 
                             key={method.id}
                             className={`payment-card ${paymentMethod === method.id ? 'selected' : ''}`}
-                            onClick={() => {
+                            onClick={async () => {
                                 setPaymentMethod(method.id);
-                                setPaymentDetails(prev => ({ ...prev, banco: '', referencia: '' }));
+                                setPaymentDetails((prev) => ({ ...prev, banco: '', referencia: '' }));
+                                if (method.id === 'credito' && selectedClient?.id != null) {
+                                    try {
+                                        const list = await getClients();
+                                        const fresh = list.find(
+                                            (c) => String(c.id) === String(selectedClient.id)
+                                        );
+                                        if (fresh) setSelectedClient(fresh);
+                                    } catch {
+                                        /* usar datos en memoria */
+                                    }
+                                }
                             }}
                         >
                             <method.icon className="payment-icon" />
@@ -523,8 +729,16 @@ export default function VentasWizard() {
                     ))}
                 </div>
 
-                {/* ═══ Single Method Details ═══ */}
-                {paymentMethod && paymentMethod !== 'mixto' && (
+                {paymentMethod === 'credito' && (
+                    <CreditoPagoPanel
+                        client={selectedClient}
+                        totalUSD={cartTotalUSD}
+                        totalBs={totalBs}
+                        onIrSeleccionarCliente={() => setCurrentStep(2)}
+                    />
+                )}
+
+                {paymentMethod && paymentMethod !== 'mixto' && paymentMethod !== 'credito' && (
                     <div style={{
                         marginTop: '24px', borderRadius: '14px',
                         border: '1px solid #e2e8f0', overflow: 'hidden',
@@ -719,8 +933,13 @@ export default function VentasWizard() {
 
                 <div className="wizard-footer">
                     <button className="btn-wizard btn-wizard-back" onClick={prevStep}>Anterior</button>
-                    <button className="btn-wizard btn-wizard-next" disabled={!isStep4Valid} onClick={nextStep}>
-                        Verificar Orden
+                    <button
+                        className="btn-wizard btn-wizard-next"
+                        disabled={!isStep4Valid}
+                        onClick={nextStep}
+                        title={paymentMethod === 'credito' && !isStep4Valid ? (creditCheck.reason || 'Revise el crédito del cliente') : ''}
+                    >
+                        {paymentMethod === 'credito' ? 'Confirmar venta a crédito' : 'Verificar Orden'}
                     </button>
                 </div>
             </div>
@@ -767,8 +986,14 @@ export default function VentasWizard() {
                     <div className="receipt-totals">
                         <div>
                             <span>SUBTOTAL:</span>
-                            <span>${cartTotalUSD.toFixed(2)}</span>
+                            <span>${cartSubtotalUSD.toFixed(2)}</span>
                         </div>
+                        {cartIvaUSD > 0 && (
+                            <div>
+                                <span>IVA ({ivaPorcentaje}%):</span>
+                                <span>${cartIvaUSD.toFixed(2)}</span>
+                            </div>
+                        )}
                         <div className="bold">
                             <span>TOTAL USD:</span>
                             <span>${cartTotalUSD.toFixed(2)}</span>
@@ -781,8 +1006,14 @@ export default function VentasWizard() {
                             Tasa Ref: Bs. {config?.exchangeRate}
                         </div>
                         <div style={{ fontSize: '12px' }}>
-                            Pago: {paymentMethod?.replace('_', ' ').toUpperCase()}
+                            Pago: {paymentMethod === 'credito' ? 'CRÉDITO (pendiente de cobro)' : paymentMethod?.replace(/_/g, ' ').toUpperCase()}
                         </div>
+                        {paymentMethod === 'credito' && selectedClient && (
+                            <div style={{ fontSize: '11px', marginTop: '6px', lineHeight: 1.4 }}>
+                                Plazo: {Number(selectedClient.diasCredito) > 0 ? selectedClient.diasCredito : 30} días ·
+                                Nuevo saldo est.: ${(Number(selectedClient.saldo || 0) + cartTotalUSD).toFixed(2)}
+                            </div>
+                        )}
                     </div>
 
                     <div className="receipt-footer">

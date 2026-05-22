@@ -6,7 +6,6 @@ import {
     FiPlus,
     FiEdit2,
     FiTrash2,
-    FiX,
     FiCheck,
     FiChevronLeft,
     FiChevronRight,
@@ -15,6 +14,7 @@ import {
     FiMapPin,
 } from 'react-icons/fi';
 import Swal from 'sweetalert2';
+import ModFormModal from '../components/ModFormModal';
 import * as empleadoService from './services/empleados.service';
 import '../assets/css/modulos.css';
 
@@ -301,98 +301,90 @@ export default function Empleados() {
                 )}
             </div>
 
-            {showModal && (
-                <div className="mod-modal-overlay" onClick={() => setShowModal(false)}>
-                    <div className="mod-modal" onClick={(ev) => ev.stopPropagation()}>
-                        <div className="mod-modal-header">
-                            <h2>{editingItem ? 'Editar empleado' : 'Nuevo empleado'}</h2>
-                            <button type="button" className="btn-close" onClick={() => setShowModal(false)}>
-                                <FiX />
-                            </button>
-                        </div>
-                        <div className="mod-modal-body">
-                            <p style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '12px' }}>
-                                Los datos se guardan en la API como usuario del sistema (tabla <code>usuario</code>). No hay campo de teléfono en el backend.
-                            </p>
-                            <div className="mod-form-row">
-                                <div className="mod-form-group">
-                                    <label>Nombre completo</label>
-                                    <input
-                                        value={form.name}
-                                        onChange={(e) => setForm({ ...form, name: e.target.value })}
-                                        placeholder="Nombre y apellido"
-                                    />
-                                </div>
-                                <div className="mod-form-group">
-                                    <label>Cédula</label>
-                                    <input
-                                        value={form.cedula}
-                                        onChange={(e) => setForm({ ...form, cedula: e.target.value })}
-                                        placeholder="V-12345678"
-                                    />
-                                </div>
-                            </div>
-                            <div className="mod-form-row">
-                                <div className="mod-form-group">
-                                    <label>Correo</label>
-                                    <input
-                                        type="email"
-                                        value={form.email}
-                                        onChange={(e) => setForm({ ...form, email: e.target.value })}
-                                        placeholder="correo@ejemplo.com"
-                                    />
-                                </div>
-                                <div className="mod-form-group">
-                                    <label>{editingItem ? 'Nueva contraseña (opcional)' : 'Contraseña'}</label>
-                                    <input
-                                        type="password"
-                                        value={form.password}
-                                        onChange={(e) => setForm({ ...form, password: e.target.value })}
-                                        placeholder={editingItem ? 'Dejar vacío para no cambiar' : 'Mín. 8 caracteres, mayúsculas, minúsculas y números'}
-                                        autoComplete="new-password"
-                                    />
-                                </div>
-                            </div>
-                            <div className="mod-form-row">
-                                <div className="mod-form-group">
-                                    <label>
-                                        <FiBriefcase style={{ marginRight: 6, verticalAlign: 'middle' }} />
-                                        Rol
-                                    </label>
-                                    <select value={form.rolId} onChange={(e) => setForm({ ...form, rolId: e.target.value })}>
-                                        {empleadoService.ROL_OPCIONES.map((r) => (
-                                            <option key={r.id} value={r.id}>
-                                                {r.nombre}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="mod-form-group">
-                                    <label>
-                                        <FiMapPin style={{ marginRight: 6, verticalAlign: 'middle' }} />
-                                        Sucursal
-                                    </label>
-                                    <select value={form.sucursalId} onChange={(e) => setForm({ ...form, sucursalId: e.target.value })}>
-                                        {sucursales.map((s) => (
-                                            <option key={s.id} value={s.id}>
-                                                {s.nombre}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="mod-modal-footer">
-                                <button type="button" className="btn-mod" onClick={() => setShowModal(false)}>
-                                    Cancelar
-                                </button>
-                                <button type="button" className="btn-mod primary" onClick={handleSave}>
-                                    <FiCheck /> Guardar
-                                </button>
-                            </div>
-                        </div>
+            <ModFormModal
+                open={showModal}
+                onClose={() => setShowModal(false)}
+                title={editingItem ? 'Editar empleado' : 'Nuevo empleado'}
+                wide
+                footer={
+                    <>
+                        <button type="button" className="btn-mod" onClick={() => setShowModal(false)}>
+                            Cancelar
+                        </button>
+                        <button type="button" className="btn-mod primary" onClick={handleSave}>
+                            <FiCheck /> Guardar
+                        </button>
+                    </>
+                }
+            >
+                <p style={{ fontSize: '13px', color: 'var(--muted)', margin: '0 0 12px' }}>
+                    Usuario del sistema (tabla usuario en la API).
+                </p>
+                <div className="mod-form-row">
+                    <div className="mod-form-group">
+                        <label>Nombre completo</label>
+                        <input
+                            value={form.name}
+                            onChange={(e) => setForm({ ...form, name: e.target.value })}
+                            placeholder="Nombre y apellido"
+                        />
+                    </div>
+                    <div className="mod-form-group">
+                        <label>Cédula</label>
+                        <input
+                            value={form.cedula}
+                            onChange={(e) => setForm({ ...form, cedula: e.target.value })}
+                            placeholder="V-12345678"
+                        />
                     </div>
                 </div>
-            )}
+                <div className="mod-form-row">
+                    <div className="mod-form-group">
+                        <label>Correo</label>
+                        <input
+                            type="email"
+                            value={form.email}
+                            onChange={(e) => setForm({ ...form, email: e.target.value })}
+                            placeholder="correo@ejemplo.com"
+                        />
+                    </div>
+                    <div className="mod-form-group">
+                        <label>{editingItem ? 'Nueva contraseña (opcional)' : 'Contraseña'}</label>
+                        <input
+                            type="password"
+                            value={form.password}
+                            onChange={(e) => setForm({ ...form, password: e.target.value })}
+                            placeholder={editingItem ? 'Vacío = sin cambio' : 'Mín. 8 caracteres'}
+                            autoComplete="new-password"
+                        />
+                    </div>
+                </div>
+                <div className="mod-form-row">
+                    <div className="mod-form-group">
+                        <label>Rol</label>
+                        <select value={form.rolId} onChange={(e) => setForm({ ...form, rolId: e.target.value })}>
+                            {empleadoService.ROL_OPCIONES.map((r) => (
+                                <option key={r.id} value={r.id}>
+                                    {r.nombre}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="mod-form-group">
+                        <label>Sucursal</label>
+                        <select
+                            value={form.sucursalId}
+                            onChange={(e) => setForm({ ...form, sucursalId: e.target.value })}
+                        >
+                            {sucursales.map((s) => (
+                                <option key={s.id} value={s.id}>
+                                    {s.nombre}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+            </ModFormModal>
         </div>
     );
 }

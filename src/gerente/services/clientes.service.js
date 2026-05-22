@@ -61,11 +61,61 @@ const apiTypeToUi = (tipo) => {
     return 'Residencial';
 };
 
+/**
+ * Estado comercial del cliente según saldo y límite de crédito.
+ * - active: sin deuda pendiente
+ * - delinquent: tiene saldo pendiente (moroso)
+ * - overlimit: deuda supera el límite autorizado
+ */
+export function deriveClientStatus(row) {
+    const saldo = Number(row?.saldo ?? 0);
+    const limite = Number(row?.limiteCredito ?? 0);
+
+    if (saldo <= 0.009) {
+        return 'active';
+    }
+    if (limite > 0 && saldo > limite + 0.009) {
+        return 'overlimit';
+    }
+    if (saldo > 0) {
+        return 'delinquent';
+    }
+    return 'active';
+}
+
+export function creditoDisponible(client) {
+    const limite = Number(client?.limiteCredito ?? 0);
+    const saldo = Number(client?.saldo ?? 0);
+    if (limite <= 0) return 0;
+    return Math.max(0, limite - saldo);
+}
+
+export function puedeVenderCredito(client, montoVenta = 0) {
+    const limite = Number(client?.limiteCredito ?? 0);
+    if (limite <= 0) {
+        return { ok: false, reason: 'El cliente no tiene límite de crédito configurado.' };
+    }
+    const disponible = creditoDisponible(client);
+    const monto = Number(montoVenta);
+    if (monto > disponible + 0.009) {
+        return {
+            ok: false,
+            reason: `Crédito insuficiente. Disponible: $${disponible.toFixed(2)} · Límite: $${limite.toFixed(2)}`,
+        };
+    }
+    return { ok: true, disponible, limite };
+}
+
 /** Respuesta de un ítem API → modelo usado en pantallas */
 const mapApiToUi = (row) => {
     if (row == null || typeof row !== 'object') {
         throw new Error('Respuesta de cliente inválida desde la API.');
     }
+    const saldo = Number(row.saldo ?? 0);
+    const limiteCredito = row.limiteCredito != null ? Number(row.limiteCredito) : 0;
+    const diasCredito = row.diasCredito != null ? Number(row.diasCredito) : 0;
+    const status = deriveClientStatus({ saldo, limiteCredito });
+
     return {
         id: row.id,
         name: row.nombreRazonSocial ?? '',
@@ -74,10 +124,12 @@ const mapApiToUi = (row) => {
         phone: row.telefono ?? '',
         address: row.direccion ?? '',
         type: apiTypeToUi(row.tipo),
-        saldo: Number(row.saldo ?? 0),
-        status: Number(row.saldo ?? 0) > 0 ? 'delinquent' : 'active',
-        limiteCredito: row.limiteCredito != null ? Number(row.limiteCredito) : null,
-        diasCredito: row.diasCredito != null ? Number(row.diasCredito) : null,
+        saldo,
+        status,
+        limiteCredito,
+        diasCredito,
+        creditoDisponible: creditoDisponible({ saldo, limiteCredito }),
+        tieneCredito: limiteCredito > 0,
     };
 };
 
@@ -89,7 +141,7 @@ const mapFormToStoreApi = (client) => {
         telefono: (client.phone || '').trim() || 'Sin especificar',
         direccion: (client.address || '').trim() || 'Sin especificar',
         tipo: uiTypeToApi(client.type || 'Residencial'),
-        saldo: client.saldo != null ? Number(client.saldo) : 0,
+        saldo: 0,
     };
     if (client.limiteCredito != null && client.limiteCredito !== '') {
         body.limiteCredito = Number(client.limiteCredito);
@@ -208,9 +260,6 @@ export const updateClient = async (id, updatedData) => {
     if (updatedData.phone != null) payload.telefono = updatedData.phone;
     if (updatedData.address != null) payload.direccion = updatedData.address;
     if (updatedData.type != null) payload.tipo = uiTypeToApi(updatedData.type);
-    if (updatedData.saldo != null && updatedData.saldo !== '') {
-        payload.saldo = Number(updatedData.saldo);
-    }
     if (updatedData.limiteCredito != null && updatedData.limiteCredito !== '') {
         payload.limiteCredito = Number(updatedData.limiteCredito);
     }

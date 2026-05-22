@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Index from './index.jsx';
 import Login from './auth/login.jsx';
+import { AuthProvider } from './auth/AuthContext.jsx';
+import ProtectedRoute from './auth/ProtectedRoute.jsx';
 
 // Layout de gerente
 import GerenteLayout from './gerente/GerenteLayout.jsx';
@@ -15,9 +17,11 @@ import Historial from './gerente/historial.jsx';
 import Reportes from './gerente/reportes.jsx';
 import Proveedores from './gerente/provedores.jsx';
 import Empleados from './gerente/empleados.jsx';
+import Contabilidad from './gerente/contabilidad.jsx';
 
 function App() {
     return (
+        <AuthProvider>
         <BrowserRouter>
             <Routes>
                 {/* Ruta principal */}
@@ -26,7 +30,14 @@ function App() {
                 <Route path="/login" element={<Login />} />
 
                 {/* Rutas de gerente con layout compartido */}
-                <Route path="/gerente" element={<GerenteLayout />}>
+                <Route
+                    path="/gerente"
+                    element={
+                        <ProtectedRoute>
+                            <GerenteLayout />
+                        </ProtectedRoute>
+                    }
+                >
                     <Route index element={<Navigate to="home" replace />} />
                     <Route path="home" element={<HomeGere />} />
                     <Route path="clientes" element={<Clientes />} />
@@ -35,11 +46,13 @@ function App() {
                     <Route path="configuracion" element={<Configuracion />} />
                     <Route path="historial" element={<Historial />} />
                     <Route path="reportes" element={<Reportes />} />
+                    <Route path="contabilidad" element={<Contabilidad />} />
                     <Route path="proveedores" element={<Proveedores />} />
                     <Route path="empleados" element={<Empleados />} />
                 </Route>
             </Routes>
         </BrowserRouter>
+        </AuthProvider>
     );
 }
 

@@ -3,19 +3,18 @@ import { Outlet } from "react-router-dom";
 import "../assets/css/dashboard.css";
 import Navbar from "../components/header";
 import Sidebar from "../components/menu";
+import { useAuth } from "../auth/AuthContext";
 
 export default function GerenteLayout() {
   const [isOpen, setIsOpen] = useState(false);
-  // Mock user para el menú (role 1 = gerente)
-  const user = { name: "Juan", role: 1, email: "juan@h2omanager.com" };
-  const user2 = { name: "Eduar", role: 2, email: "eduar@gmail.com" };
-  
+  const { user, logout } = useAuth();
+
   return (
     <div className="app-layout">
       <Sidebar
         isOpen={isOpen}
         onToggle={() => setIsOpen(!isOpen)}
-        role={user.role}
+        role={user?.role}
       />
       <div
         className={`main-content ${isOpen ? "sidebar-open" : "sidebar-closed"}`}
@@ -23,7 +22,7 @@ export default function GerenteLayout() {
         <Navbar
           toggleSidebar={() => setIsOpen(!isOpen)}
           user={user}
-          onLogout={() => {}}
+          onLogout={logout}
         />
         <div className="dash-container">
           <Outlet />

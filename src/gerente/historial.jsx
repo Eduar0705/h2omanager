@@ -1,6 +1,21 @@
 import { useState, useEffect } from 'react';
-import { FiSearch, FiRefreshCw, FiClock, FiX, FiChevronLeft, FiChevronRight, FiHash, FiUser, FiCalendar, FiCreditCard } from 'react-icons/fi';
+import {
+    FiSearch,
+    FiRefreshCw,
+    FiClock,
+    FiX,
+    FiChevronLeft,
+    FiChevronRight,
+    FiHash,
+    FiUser,
+    FiCalendar,
+    FiCreditCard,
+    FiDownload,
+} from 'react-icons/fi';
+import Swal from 'sweetalert2';
 import * as ventaService from './services/ventas.service';
+import * as configService from './services/config.service';
+import { descargarDocumentoPdf } from './utils/factura-pdf';
 import '../assets/css/historial.css';
 
 export default function Historial() {
@@ -11,6 +26,7 @@ export default function Historial() {
     const [tipoDocFilter, setTipoDocFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedDoc, setSelectedDoc] = useState(null);
+    const [pdfLoading, setPdfLoading] = useState(false);
     const rowsPerPage = 10;
 
     useEffect(() => {
@@ -64,6 +80,45 @@ export default function Historial() {
 
     const totalDocs = filteredDocs.length;
     const totalMonto = filteredDocs.reduce((acc, d) => acc + Number(d.total || 0), 0);
+
+    const abrirDetalle = async (doc) => {
+        setSelectedDoc(doc);
+        if (doc.id && (!doc.detalles || doc.detalles.length === 0)) {
+            try {
+                const completo = await ventaService.getDocumentoHistorial(doc.id);
+                setSelectedDoc(completo);
+            } catch (e) {
+                console.warn('No se pudo cargar detalle completo:', e);
+            }
+        }
+    };
+
+    const handleDescargarPdf = async () => {
+        if (!selectedDoc) return;
+        setPdfLoading(true);
+        try {
+            let doc = selectedDoc;
+            if (doc.id && (!doc.detalles || doc.detalles.length === 0)) {
+                doc = await ventaService.getDocumentoHistorial(doc.id);
+                setSelectedDoc(doc);
+            }
+            let empresaRif = '';
+            try {
+                const general = await configService.getGeneralConfig();
+                empresaRif = general?.rif || '';
+            } catch {
+                /* opcional */
+            }
+            descargarDocumentoPdf(doc, {
+                empresaNombre: 'H2O MANAGER',
+                empresaRif,
+            });
+        } catch (e) {
+            Swal.fire('Error', e?.message || 'No se pudo generar el PDF', 'error');
+        } finally {
+            setPdfLoading(false);
+        }
+    };
 
     return (
         <div className="historial-container">
@@ -140,7 +195,7 @@ export default function Historial() {
                             </thead>
                             <tbody>
                                 {paginated.map((doc) => (
-                                    <tr key={doc.id} onClick={() => setSelectedDoc(doc)}>
+                                    <tr key={doc.id} onClick={() => abrirDetalle(doc)}>
                                         <td><span className="sale-id-chip">{doc.serieCorrelativo || `DOC-${doc.id}`}</span></td>
                                         <td>
                                             <div className="sale-date">
@@ -180,9 +235,26 @@ export default function Historial() {
                     <div className="hist-modal" onClick={(e) => e.stopPropagation()}>
                         <div className="hist-modal-header">
                             <h2>Detalle de Documento</h2>
-                            <button className="btn-close" onClick={() => setSelectedDoc(null)}>
-                                <FiX />
-                            </button>
+                            <div className="hist-modal-actions">
+                                <button
+                                    type="button"
+                                    className="btn-hist-pdf"
+                                    onClick={handleDescargarPdf}
+                                    disabled={pdfLoading}
+                                    title="Descargar PDF"
+                                >
+                                    <FiDownload className={pdfLoading ? 'spin' : ''} />
+                                    {pdfLoading ? 'Generando…' : 'Descargar PDF'}
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn-close"
+                                    onClick={() => setSelectedDoc(null)}
+                                    aria-label="Cerrar"
+                                >
+                                    <FiX />
+                                </button>
+                            </div>
                         </div>
                         <div className="hist-modal-body">
                             <div className="detail-grid">
@@ -213,7 +285,7 @@ export default function Historial() {
                             </div>
 
                             <h4 style={{ fontSize: '13px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.3px', margin: '0 0 10px' }}>
-                                Detalles API ({selectedDoc.detalles?.length || 0})
+                                Líneas de detalle ({selectedDoc.detalles?.length || 0})
                             </h4>
                             <div style={{ borderRadius: '10px', border: '1px solid var(--border)', overflow: 'hidden' }}>
                                 <table className="detail-items-table">

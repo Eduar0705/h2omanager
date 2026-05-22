@@ -7,6 +7,7 @@ import {
     FiShoppingCart,
     FiUserCheck,
     FiClock,
+    FiBookOpen,
     FiChevronLeft,
     FiChevronRight,
     FiMenu
@@ -26,6 +27,7 @@ const MENU_GERENTE = [
 
     { id: 'proveedores', icon: FiUserCheck,   label: 'Proveedores', link: '/gerente/proveedores' },
     { id: 'reportes',    icon: FiBarChart2,   label: 'Reportes',    link: '/gerente/reportes' },
+    { id: 'contabilidad', icon: FiBookOpen,   label: 'Contabilidad', link: '/gerente/contabilidad' },
 ]
 
 const MENU_EMPLEADO = [

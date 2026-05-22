@@ -377,6 +377,48 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
+}
+
+.hist-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.btn-hist-pdf {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--accent);
+  background: #fff;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.btn-hist-pdf:hover:not(:disabled) {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-hist-pdf:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.btn-hist-pdf .spin {
+  animation: histSpin 0.8s linear infinite;
+}
+
+@keyframes histSpin {
+  to { transform: rotate(360deg); }
 }
 
 .hist-modal-header h2 {

@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { FiMail, FiLock, FiEye, FiEyeOff, FiArrowRight } from 'react-icons/fi'
 import Swal from 'sweetalert2';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from './AuthContext';
 import '../assets/css/login.css'
 import Logo from '../../public/Logo.webp'
 
 export default function Login() {
     const navigate = useNavigate();
+    const location = useLocation();
+    const { login, isAuthenticated, loading: authLoading } = useAuth();
     const [email, setEmail]           = useState('')
     const [password, setPassword]     = useState('')
     const [showPassword, setShowPass] = useState(false)
@@ -28,23 +31,6 @@ export default function Login() {
             showCloseButton: true
         })
     }
-    function success(ms){
-        Swal.fire({
-            icon: 'success',
-            title: 'Inicio de sesión exitoso',
-            text: ms,
-            confirmButtonText: 'Aceptar',
-            customClass: {
-                popup: 'swal-popup',
-                title: 'swal-title',
-                text: 'swal-text',
-                confirmButton: 'swal-confirm-btn'
-            },
-            buttonsStyling: false,
-            showCloseButton: true
-        })
-    }
-
     function validateEmail(email) {
         const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
         return re.test(String(email).toLowerCase())
@@ -66,16 +52,48 @@ export default function Login() {
         return true
     }
 
-    const handleSubmit = (e)=>{
+    const handleSubmit = async (e) => {
         if (e) e.preventDefault();
-        if (!validateForm()) return
+        if (!validateForm()) return;
 
-        setIsLoading(true)
-        setTimeout(() => {
-            success(`¡Bienvenido ${email}! Has iniciado sesión correctamente.`)
-            navigate('/gerente/home');
+        setIsLoading(true);
+        try {
+            const user = await login(email.trim(), password);
+            const dest = location.state?.from || '/gerente/home';
+            await Swal.fire({
+                icon: 'success',
+                title: 'Inicio de sesión exitoso',
+                text: `¡Bienvenido, ${user.name}!`,
+                confirmButtonText: 'Aceptar',
+                customClass: {
+                    popup: 'swal-popup',
+                    title: 'swal-title',
+                    text: 'swal-text',
+                    confirmButton: 'swal-confirm-btn',
+                },
+                buttonsStyling: false,
+                showCloseButton: true,
+            });
+            navigate(dest, { replace: true });
+        } catch (err) {
+            error(err?.message || 'No se pudo iniciar sesión. Intenta de nuevo.');
+        } finally {
             setIsLoading(false);
-        }, 1500);
+        }
+    };
+
+    if (authLoading) {
+        return (
+            <div className="login-page">
+                <div className="login-card" style={{ textAlign: 'center', padding: '2rem' }}>
+                    Verificando sesión…
+                </div>
+            </div>
+        );
+    }
+
+    if (isAuthenticated) {
+        return <Navigate to="/gerente/home" replace />;
     }
 
     return (

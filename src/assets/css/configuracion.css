@@ -82,6 +82,12 @@
   color: var(--text);
 }
 
+.config-section-desc {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
 /* ── ANIMATIONS ──────────────────────────────────── */
 @keyframes spin {
   from { transform: rotate(0deg); }

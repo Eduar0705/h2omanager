@@ -245,3 +245,123 @@
 @media (max-width: 480px) {
   .rep-stats { grid-template-columns: 1fr; }
 }
+
+/* ── INFORMES GERENCIALES ─────────────────────────── */
+.rep-section-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--text);
+  margin: 32px 0 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--border);
+}
+
+.rep-gerencial-panel {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.rep-gerencial-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+  align-items: end;
+  margin-bottom: 16px;
+}
+
+.rep-gerencial-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.rep-gerencial-form select,
+.rep-gerencial-form input {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.rep-gerencial-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.rep-preview {
+  margin-top: 20px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+.rep-preview-totales {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 14px;
+  font-size: 13px;
+}
+
+.rep-preview-totales span {
+  background: #f8fafc;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.rep-table-wrap {
+  overflow-x: auto;
+  max-height: 420px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.rep-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.rep-data-table th,
+.rep-data-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.rep-data-table th {
+  background: #f8fafc;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+}
+
+.rep-contable-seccion {
+  margin-bottom: 16px;
+}
+
+.rep-contable-seccion h4 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.spin {
+  animation: repSpin 0.8s linear infinite;
+}
+
+@keyframes repSpin {
+  to { transform: rotate(360deg); }
+}
+
+@media print {
+  .rep-header-actions,
+  .rep-gerencial-form,
+  .btn-rep { display: none !important; }
+}

@@ -384,6 +384,127 @@
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
+/* ── STEP 3: CATÁLOGO CON FILTROS ───────────────── */
+.ventas-catalog-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 0 4px;
+}
+
+.ventas-tipo-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.ventas-tipo-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.ventas-tipo-chip:hover {
+    border-color: var(--chip-color, var(--accent));
+    color: var(--chip-color, var(--accent));
+}
+
+.ventas-tipo-chip.active {
+    background: var(--chip-color, var(--accent));
+    border-color: var(--chip-color, var(--accent));
+    color: #fff;
+}
+
+.ventas-catalog-search {
+    flex: 1;
+    min-width: 200px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    font-size: 14px;
+    background: var(--surface);
+}
+
+.ventas-catalog-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px;
+    color: var(--muted);
+}
+
+.ventas-catalog-empty svg {
+    font-size: 36px;
+    opacity: 0.25;
+    margin-bottom: 10px;
+}
+
+.product-tipo-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.product-tipo-badge.tipo-producto {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+.product-tipo-badge.tipo-servicio {
+    background: #ede9fe;
+    color: #6d28d9;
+}
+.product-tipo-badge.tipo-insumo {
+    background: #ffedd5;
+    color: #c2410c;
+}
+
+.product-card.out-of-stock {
+    opacity: 0.65;
+}
+
+.product-card.out-of-stock .btn-add-product:disabled {
+    background: #cbd5e1;
+    cursor: not-allowed;
+}
+
+.product-card.tipo-servicio .product-icon-wrap {
+    background: #ede9fe;
+    color: #7c3aed;
+}
+.product-card.tipo-insumo .product-icon-wrap {
+    background: #ffedd5;
+    color: #ea580c;
+}
+
+.cart-tipo-tag {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    vertical-align: middle;
+}
+.cart-tipo-tag.tipo-producto { background: #dbeafe; color: #1d4ed8; }
+.cart-tipo-tag.tipo-servicio { background: #ede9fe; color: #6d28d9; }
+.cart-tipo-tag.tipo-insumo { background: #ffedd5; color: #c2410c; }
+
 /* ── STEP 3: PRODUCTS ───────────────────────────── */
 .products-layout {
     display: flex;
@@ -542,13 +663,39 @@
     padding: 20px;
     border-radius: 12px;
     display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.cart-total-lines {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 13px;
+    opacity: 0.95;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+    padding-bottom: 10px;
+}
+
+.cart-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cart-total-row.iva {
+    font-weight: 600;
+}
+
+.cart-total-main {
+    display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
 .cart-total-box .total-label { font-size: 16px; font-weight: 500; }
 .cart-total-box .total-amount { font-size: 24px; font-weight: 700; text-align: right; }
-.cart-total-box .total-bs { font-size: 13px; opacity: 0.8; }
+.cart-total-box .total-bs { font-size: 13px; opacity: 0.8; text-align: right; }
 
 /* ── STEP 4: PAYMENT ────────────────────────────── */
 .payment-methods {
@@ -579,6 +726,185 @@
 }
 
 .payment-card h4 { margin: 0; color: var(--text); }
+
+/* ── VENTA A CRÉDITO (paso 4) ─────────────────── */
+.ventas-credito-panel {
+    margin-top: 24px;
+    display: block;
+    visibility: visible;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    background: #fff;
+    animation: fadeInSlide 0.3s ease-out;
+}
+
+.ventas-credito-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 24px;
+    flex-wrap: wrap;
+}
+
+.ventas-credito-header.is-ok {
+    background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%);
+    border-bottom: 1px solid #bfdbfe;
+}
+
+.ventas-credito-header.is-error {
+    background: linear-gradient(135deg, #fef2f2 0%, #fff7ed 100%);
+    border-bottom: 1px solid #fecaca;
+}
+
+.ventas-credito-header-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: #2563eb;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.ventas-credito-header.is-error .ventas-credito-header-icon {
+    background: #dc2626;
+}
+
+.ventas-credito-header-label {
+    margin: 0;
+    font-weight: 700;
+    font-size: 15px;
+    color: #1e293b;
+}
+
+.ventas-credito-header-sub {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.ventas-credito-header-total {
+    margin-left: auto;
+    text-align: right;
+}
+
+.ventas-credito-header-total span {
+    display: block;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.ventas-credito-header-total strong {
+    display: block;
+    font-size: 28px;
+    font-weight: 800;
+    color: #1e293b;
+    line-height: 1.1;
+}
+
+.ventas-credito-header-total small {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.ventas-credito-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    padding: 16px 24px;
+    background: #f8fafc;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.ventas-credito-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ventas-credito-stat span {
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.ventas-credito-stat strong {
+    font-size: 16px;
+    color: #1e293b;
+}
+
+.ventas-credito-resumen {
+    padding: 14px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ventas-credito-resumen-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    color: #334155;
+    font-weight: 600;
+}
+
+.ventas-credito-resumen-row--muted {
+    font-weight: 500;
+    color: #64748b;
+    font-size: 13px;
+    padding-top: 8px;
+    border-top: 1px dashed #e2e8f0;
+}
+
+.ventas-credito-alert {
+    margin: 0 24px 20px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.ventas-credito-alert p {
+    margin: 0;
+}
+
+.ventas-credito-alert--ok {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: #dcfce7;
+    border: 1px solid #86efac;
+    color: #166534;
+}
+
+.ventas-credito-alert--error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+
+.ventas-credito-alert--warn {
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    color: #9a3412;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.ventas-credito-hint {
+    margin-top: 8px !important;
+    font-size: 12px !important;
+    color: #b45309 !important;
+    font-weight: 500 !important;
+}
 
 /* ── STEP 5: RECEIPT PREVIEW ──────────────────── */
 .receipt-wrapper {

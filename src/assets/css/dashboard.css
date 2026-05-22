@@ -9,17 +9,6 @@
   --text:     #0d1f33;
   --muted:    #6b85a3;
   --border:   #d0dcea;
-/* ── dashboard.css — mismo sistema de diseño ─────── */
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
-
-:root {
-  --bg:       #f0f5fb;
-  --surface:  #ffffff;
-  --accent:   #0077cc;
-  --accent2:  #00b899;
-  --text:     #0d1f33;
-  --muted:    #6b85a3;
-  --border:   #d0dcea;
   --shadow:   rgba(0, 90, 180, 0.08);
   --font-display: 'Syne', sans-serif;
   --font-body:    'DM Sans', sans-serif;
@@ -374,4 +363,11 @@
     margin-left: 0 !important;
   }
 }
+
+.dash-refresh .spin {
+  animation: dashSpin 0.8s linear infinite;
+}
+
+@keyframes dashSpin {
+  to { transform: rotate(360deg); }
 }

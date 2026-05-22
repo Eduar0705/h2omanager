@@ -1,20 +1,32 @@
 /**
- * Inventario de botellones contra API Laravel:
- * - /api/v1/item
- * - /api/v1/inventarioExistencia
- * - /api/v1/movimientoInventario
+ * Inventario — API Laravel
+ * - GET  /api/v1/inventario/resumen
+ * - POST /api/v1/inventario/ajuste
+ * - CRUD /api/v1/item
+ * - GET  /api/v1/movimientoInventario (historial con detalle)
  */
+
+import { getAuthHeaders } from '../../auth/auth.service';
+import { getCuentas } from './contabilidad.service';
 
 const USE_VITE_PROXY = import.meta.env.DEV;
 const PROD_API_ORIGIN = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 const BASE_URL = USE_VITE_PROXY ? '' : PROD_API_ORIGIN;
 const DEFAULT_SUCURSAL_ID = Number(import.meta.env.VITE_DEFAULT_SUCURSAL_ID || 1);
-const DEFAULT_USER_ID = Number(import.meta.env.VITE_DEFAULT_USER_ID || 1);
 
+const INVENTARIO_PATH = USE_VITE_PROXY ? '/api/v1/inventario' : `${PROD_API_ORIGIN}/api/v1/inventario`;
 const ITEM_PATH = USE_VITE_PROXY ? '/api/v1/item' : `${PROD_API_ORIGIN}/api/v1/item`;
-const EXIST_PATH = USE_VITE_PROXY ? '/api/v1/inventarioExistencia' : `${PROD_API_ORIGIN}/api/v1/inventarioExistencia`;
 const MOV_PATH = USE_VITE_PROXY ? '/api/v1/movimientoInventario' : `${PROD_API_ORIGIN}/api/v1/movimientoInventario`;
-const ALLOWED_ITEM_TYPES = new Set(['PRODUCTO', 'INSUMO']);
+
+const TIPO_BOTELLON = 'PRODUCTO';
+const TIPO_SERVICIO = 'SERVICIO';
+const TIPO_INSUMO = 'INSUMO';
+
+const TIPO_UI_MAP = {
+    botellon: TIPO_BOTELLON,
+    servicio: TIPO_SERVICIO,
+    insumo: TIPO_INSUMO,
+};
 
 function requireApiConfig() {
     if (!USE_VITE_PROXY && !PROD_API_ORIGIN) {
@@ -40,10 +52,11 @@ function resolvePaginationUrl(url) {
     return `/${url}`.replace(/\/+/g, '/');
 }
 
-const defaultHeaders = {
-    Accept: 'application/json',
-    'Content-Type': 'application/json',
-};
+function authJsonHeaders() {
+    return getAuthHeaders({
+        'Content-Type': 'application/json',
+    });
+}
 
 async function parseJsonSafe(response) {
     const text = await response.text();
@@ -55,14 +68,45 @@ async function parseJsonSafe(response) {
     }
 }
 
+function formatApiError(body, status) {
+    const errs = body?.errors;
+    if (errs?.cuentaContableVentaId) {
+        const det = Array.isArray(errs.cuentaContableVentaId)
+            ? errs.cuentaContableVentaId.join(' ')
+            : String(errs.cuentaContableVentaId);
+        return `Cuenta contable de venta no válida: ${det} Elija una cuenta de tipo Ingreso en el formulario.`;
+    }
+    if (errs) {
+        return Object.values(errs).flat().join(' ');
+    }
+    return body?.message || `Error HTTP ${status}`;
+}
+
 async function handleResponse(response) {
     const body = await parseJsonSafe(response);
     if (response.ok) return body;
-    const msg =
-        body?.message ||
-        (body?.errors && Object.values(body.errors).flat().join(' ')) ||
-        `Error HTTP ${response.status}`;
-    throw new Error(msg);
+    throw new Error(formatApiError(body, response.status));
+}
+
+/** Cuentas del plan contable aptas para registrar ingresos por venta. */
+export async function getCuentasIngresoOpciones() {
+    const cuentas = await getCuentas();
+    const ingresos = cuentas.filter((c) => /^ingreso$/i.test(String(c.tipo || '').trim()));
+    return ingresos.length > 0 ? ingresos : cuentas;
+}
+
+export function esCuentaIngresoValida(cuentaId, opciones = []) {
+    const id = Number(cuentaId);
+    return Number.isFinite(id) && id > 0 && opciones.some((c) => Number(c.id) === id);
+}
+
+export function cuentaIngresoPorDefecto(opciones = []) {
+    if (!opciones.length) return null;
+    return (
+        opciones.find((c) => c.codigo === '4.1.02') ||
+        opciones.find((c) => /venta/i.test(String(c.nombre || ''))) ||
+        opciones[0]
+    );
 }
 
 async function fetchWithNetworkHint(url, init = {}) {
@@ -72,15 +116,17 @@ async function fetchWithNetworkHint(url, init = {}) {
         const hint =
             e?.message?.includes('Failed to fetch') || e?.name === 'TypeError'
                 ? USE_VITE_PROXY
-                    ? ' Reinicia `npm run dev`, revisa el proxy en vite.config y que Laragon esté en marcha.'
-                    : ' Comprueba VITE_API_URL, que el servidor API esté en marcha y CORS.'
+                    ? ' Reinicia `npm run dev` y verifica que Laragon esté activo.'
+                    : ' Comprueba VITE_API_URL y CORS.'
                 : '';
         throw new Error(`No se pudo conectar con la API.${hint} (${e?.message || e})`);
     }
 }
 
 async function apiGet(url) {
-    const response = await fetchWithNetworkHint(url, { headers: { Accept: 'application/json' } });
+    const response = await fetchWithNetworkHint(url, {
+        headers: getAuthHeaders(),
+    });
     return handleResponse(response);
 }
 
@@ -101,56 +147,105 @@ async function fetchAllPages(startUrl) {
     return rows;
 }
 
-function toMysqlDatetime(date) {
-    const pad = (n) => String(n).padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+function mapResumenToUi(row) {
+    const controlaStock = row.controlaStock !== false && row.tipo !== TIPO_SERVICIO;
+    return {
+        id: Number(row.id),
+        name: row.nombre || `Item ${row.id}`,
+        nombre: row.nombre,
+        sku: row.sku || '',
+        unit: row.unidadMedida || 'UN',
+        unidadMedida: row.unidadMedida || 'UN',
+        stock: controlaStock ? Number(row.stock ?? 0) : null,
+        minStock: Number(row.stockMinimo ?? 0),
+        stockMinimo: Number(row.stockMinimo ?? 0),
+        type: row.tipo || TIPO_BOTELLON,
+        tipoLabel:
+            row.tipo === TIPO_SERVICIO
+                ? 'Servicio'
+                : row.tipo === TIPO_INSUMO
+                  ? 'Insumo'
+                  : 'Producto',
+        price: Number(row.precioSugerido ?? 0),
+        precioSugerido: Number(row.precioSugerido ?? 0),
+        proveedorId: Number(row.proveedorId ?? 0),
+        cuentaContableVentaId: Number(row.cuentaContableVentaId ?? 0),
+        gravaIva: Boolean(row.gravaIva),
+        stockBajo: controlaStock && Boolean(row.stockBajo),
+        controlaStock,
+    };
 }
 
-export const getInventory = async () => {
+/**
+ * @param {'PRODUCTO'|'SERVICIO'|'INSUMO'|null} tipoFilter
+ */
+export const getInventory = async (sucursalId = DEFAULT_SUCURSAL_ID, tipoFilter = null) => {
     requireApiConfig();
-    const [itemsRaw, existRaw] = await Promise.all([
-        fetchAllPages(`${ITEM_PATH}?page=1`),
-        fetchAllPages(`${EXIST_PATH}?page=1`),
-    ]);
-
-    const existByItem = new Map(
-        existRaw
-            .filter((e) => Number(e.sucursalId) === DEFAULT_SUCURSAL_ID)
-            .map((e) => [Number(e.itemId), Number(e.cantidadActual || 0)])
-    );
-
-    return itemsRaw
-        .filter((i) => !i.deletedAt)
-        .filter((i) => ALLOWED_ITEM_TYPES.has(String(i.tipo || '').trim().toUpperCase()))
-        .map((i) => ({
-            id: Number(i.id),
-            name: i.nombre || `Item ${i.id}`,
-            sku: i.sku || '',
-            unit: i.unidadMedida || 'UN',
-            stock: existByItem.get(Number(i.id)) || 0,
-            minStock: Number(i.stockMinimo || 0),
-            type: i.tipo || 'PRODUCTO',
-            price: Number(i.precioSugerido || 0),
-            proveedorId: Number(i.proveedorId || 0),
-            cuentaContableVentaId: Number(i.cuentaContableVentaId || 0),
-            gravaIva: Boolean(i.gravaIva),
-            stockMinimo: Number(i.stockMinimo || 0),
-            unidadMedida: i.unidadMedida || 'UN',
-            nombre: i.nombre || `Item ${i.id}`,
-        }));
+    let url = `${INVENTARIO_PATH}/resumen?sucursalId=${sucursalId}`;
+    if (tipoFilter) url += `&tipo=${encodeURIComponent(tipoFilter)}`;
+    const json = await apiGet(url);
+    const rows = Array.isArray(json.data) ? json.data : [];
+    return rows.map(mapResumenToUi);
 };
 
-export const getHistory = async () => {
+const TIPO_LABELS = {
+    compra: 'Entrada (compra)',
+    venta: 'Salida (venta)',
+    ajuste: 'Ajuste',
+    traslado: 'Traslado',
+    merma: 'Merma',
+};
+
+function flattenMovimientos(movimientos) {
+    const rows = [];
+    for (const m of movimientos) {
+        const detalles = Array.isArray(m.detalles) ? m.detalles : [];
+        if (detalles.length > 0) {
+            for (const d of detalles) {
+                const signo = Number(d.signo ?? 0);
+                rows.push({
+                    id: `${m.id}-${d.id ?? d.itemId}`,
+                    movimientoId: m.id,
+                    fecha: m.fecha,
+                    tipo: m.tipo,
+                    tipoLabel: TIPO_LABELS[m.tipo] || m.tipo,
+                    itemNombre: d.itemNombre || '—',
+                    itemSku: d.itemSku || '',
+                    cantidad: Number(d.cantidad ?? 0),
+                    signo,
+                    esEntrada: signo > 0,
+                    sucursalNombre: m.sucursalNombre,
+                    usuarioNombre: m.usuarioNombre,
+                    referenciaDoc: m.referenciaDoc,
+                    motivo: d.motivo,
+                });
+            }
+        } else {
+            rows.push({
+                id: String(m.id),
+                movimientoId: m.id,
+                fecha: m.fecha,
+                tipo: m.tipo,
+                tipoLabel: TIPO_LABELS[m.tipo] || m.tipo,
+                itemNombre: '—',
+                itemSku: '',
+                cantidad: null,
+                signo: m.tipo === 'compra' ? 1 : -1,
+                esEntrada: m.tipo === 'compra' || m.tipo === 'ajuste',
+                sucursalNombre: m.sucursalNombre,
+                usuarioNombre: m.usuarioNombre,
+                referenciaDoc: m.referenciaDoc,
+                motivo: null,
+            });
+        }
+    }
+    return rows.sort((a, b) => new Date(String(b.fecha).replace(' ', 'T')) - new Date(String(a.fecha).replace(' ', 'T')));
+}
+
+export const getHistory = async (sucursalId = DEFAULT_SUCURSAL_ID) => {
     requireApiConfig();
-    const rows = await fetchAllPages(`${MOV_PATH}?sucursalId[eq]=${DEFAULT_SUCURSAL_ID}&page=1`);
-    return rows.map((m) => ({
-        id: m.id,
-        fecha: m.fecha,
-        tipo: m.tipo,
-        referenciaDoc: m.referenciaDoc,
-        sucursalNombre: m.sucursalNombre,
-        usuarioNombre: m.usuarioNombre,
-    }));
+    const raw = await fetchAllPages(`${MOV_PATH}?sucursalId[eq]=${sucursalId}&page=1`);
+    return flattenMovimientos(raw);
 };
 
 export const getProveedoresOpciones = async () => {
@@ -166,11 +261,13 @@ export const getProveedoresOpciones = async () => {
 };
 
 function normalizeItemPayload(form) {
+    const tipoUi = form.tipoInventario || form.tipo || 'botellon';
+    const tipo = TIPO_UI_MAP[tipoUi] || TIPO_BOTELLON;
+
     return {
         sku: String(form.sku || '').trim(),
         nombre: String(form.nombre || '').trim(),
-        // La API actualmente valida PRODUCTO/SERVICIO
-        tipo: 'PRODUCTO',
+        tipo,
         unidadMedida: String(form.unidadMedida || '').trim() || 'UN',
         gravaIva: Boolean(form.gravaIva),
         proveedorId: Number(form.proveedorId),
@@ -182,11 +279,10 @@ function normalizeItemPayload(form) {
 
 export const createItem = async (form) => {
     requireApiConfig();
-    const payload = normalizeItemPayload(form);
     const response = await fetchWithNetworkHint(ITEM_PATH, {
         method: 'POST',
-        headers: defaultHeaders,
-        body: JSON.stringify(payload),
+        headers: authJsonHeaders(),
+        body: JSON.stringify(normalizeItemPayload(form)),
     });
     const body = await handleResponse(response);
     return body?.data ?? body;
@@ -194,67 +290,49 @@ export const createItem = async (form) => {
 
 export const updateItem = async (itemId, form) => {
     requireApiConfig();
-    const payload = normalizeItemPayload(form);
     const response = await fetchWithNetworkHint(`${ITEM_PATH}/${itemId}`, {
         method: 'PATCH',
-        headers: defaultHeaders,
-        body: JSON.stringify(payload),
+        headers: authJsonHeaders(),
+        body: JSON.stringify(normalizeItemPayload(form)),
     });
     const body = await handleResponse(response);
     return body?.data ?? body;
 };
 
 /**
- * type: 'in' | 'out'
+ * @param {'in'|'out'} type
  */
-export const updateStock = async (itemId, amount, type, note = '') => {
+export const updateStock = async (itemId, amount, type, note = '', context = {}) => {
     requireApiConfig();
-    const inventory = await getInventory();
-    const item = inventory.find((i) => Number(i.id) === Number(itemId));
-    if (!item) throw new Error('Item no encontrado');
+    const sucursalId = Number(context.sucursalId ?? DEFAULT_SUCURSAL_ID);
+    const usuarioId = Number(context.usuarioId ?? 1);
 
-    const oldStock = Number(item.stock || 0);
-    const delta = Number(amount || 0);
-    const newStock = type === 'in' ? oldStock + delta : oldStock - delta;
-    if (!Number.isFinite(delta) || delta <= 0) throw new Error('Cantidad inválida');
-    if (newStock < 0) throw new Error('Stock insuficiente');
+    const response = await fetchWithNetworkHint(`${INVENTARIO_PATH}/ajuste`, {
+        method: 'POST',
+        headers: authJsonHeaders(),
+        body: JSON.stringify({
+            sucursalId,
+            itemId: Number(itemId),
+            cantidad: Number(amount),
+            direccion: type === 'in' ? 'entrada' : 'salida',
+            usuarioId,
+            motivo: note || (type === 'in' ? 'Entrada de inventario' : 'Salida de inventario'),
+        }),
+    });
 
-    const updatePayload = {
-        sucursalId: DEFAULT_SUCURSAL_ID,
-        itemId: Number(itemId),
-        cantidadActual: newStock,
-    };
-
-    const movimientoPayload = {
-        fecha: toMysqlDatetime(new Date()),
-        sucursalId: DEFAULT_SUCURSAL_ID,
-        usuarioId: DEFAULT_USER_ID,
-        tipo: type === 'in' ? 'compra' : 'venta',
-        referenciaDoc: `${note || 'Ajuste inventario'} | item:${item.sku || item.name} | ${oldStock}->${newStock}`,
-    };
-
-    const [existRes, movRes] = await Promise.all([
-        fetchWithNetworkHint(EXIST_PATH, {
-            method: 'POST',
-            headers: defaultHeaders,
-            body: JSON.stringify(updatePayload),
-        }).then(handleResponse),
-        fetchWithNetworkHint(MOV_PATH, {
-            method: 'POST',
-            headers: defaultHeaders,
-            body: JSON.stringify(movimientoPayload),
-        }).then(handleResponse),
-    ]);
-
+    const body = await handleResponse(response);
+    const data = body?.data ?? body;
     return {
-        itemId: Number(itemId),
-        oldStock,
-        newStock,
-        cantidad: delta,
-        existencia: existRes?.data ?? existRes,
-        movimiento: movRes?.data ?? movRes,
+        itemId: data?.itemId,
+        stockAnterior: data?.stockAnterior,
+        stockNuevo: data?.stockNuevo,
+        cantidad: data?.cantidad,
+        direccion: data?.direccion,
+        movimiento: data?.movimiento,
     };
 };
+
+export { TIPO_BOTELLON, TIPO_SERVICIO, TIPO_INSUMO, DEFAULT_SUCURSAL_ID };
 
 export const saveInventoryConfig = async () => {
     throw new Error('saveInventoryConfig no está soportado con la API actual.');

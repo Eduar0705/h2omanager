@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import {
-    FiSearch, FiRefreshCw, FiPlus, FiEdit2, FiTrash2, FiX,
+    FiSearch, FiRefreshCw, FiPlus, FiEdit2, FiTrash2,
     FiPhone, FiCheck, FiChevronLeft, FiChevronRight, FiPackage, FiMapPin, FiUsers
 } from 'react-icons/fi';
 import Swal from 'sweetalert2';
+import ModFormModal from '../components/ModFormModal';
 import * as proveedorService from './services/provedores.service';
 import '../assets/css/modulos.css';
 
@@ -137,30 +138,78 @@ export default function Proveedores() {
                 )}
             </div>
 
-            {showModal && (
-                <div className="mod-modal-overlay" onClick={()=>setShowModal(false)}>
-                    <div className="mod-modal" onClick={ev=>ev.stopPropagation()}>
-                        <div className="mod-modal-header"><h2>{editingItem?'Editar Proveedor':'Nuevo Proveedor'}</h2><button className="btn-close" onClick={()=>setShowModal(false)}><FiX /></button></div>
-                        <div className="mod-modal-body">
-                            <div className="mod-form-row">
-                                <div className="mod-form-group"><label>Nombre / Razón Social</label><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Nombre del proveedor" /></div>
-                                <div className="mod-form-group"><label>RIF</label><input value={form.rif} onChange={e=>setForm({...form,rif:e.target.value})} placeholder="J-12345678-9" /></div>
-                            </div>
-                            <div className="mod-form-row">
-                                <div className="mod-form-group"><label>Teléfono</label><input value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} placeholder="0212-1234567" /></div>
-                                <div className="mod-form-group"><label>Correo (contacto)</label><input type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="correo@proveedor.com" required /></div>
-                            </div>
-                            <div className="mod-form-group"><label>Dirección</label><input value={form.address} onChange={e=>setForm({...form,address:e.target.value})} placeholder="Dirección completa" /></div>
-                            <div className="mod-form-group"><label>Categoría</label>
-                                <select value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>
-                                    <option>Agua</option><option>Envases</option><option>Equipos</option><option>Insumos</option><option>Transporte</option><option>Otro</option>
-                                </select>
-                            </div>
-                            <div className="mod-modal-footer"><button className="btn-mod" onClick={()=>setShowModal(false)}>Cancelar</button><button className="btn-mod primary" onClick={handleSave}><FiCheck /> Guardar</button></div>
-                        </div>
+            <ModFormModal
+                open={showModal}
+                onClose={() => setShowModal(false)}
+                title={editingItem ? 'Editar Proveedor' : 'Nuevo Proveedor'}
+                footer={
+                    <>
+                        <button type="button" className="btn-mod" onClick={() => setShowModal(false)}>
+                            Cancelar
+                        </button>
+                        <button type="button" className="btn-mod primary" onClick={handleSave}>
+                            <FiCheck /> Guardar
+                        </button>
+                    </>
+                }
+            >
+                <div className="mod-form-row">
+                    <div className="mod-form-group">
+                        <label>Nombre / Razón Social</label>
+                        <input
+                            value={form.name}
+                            onChange={(e) => setForm({ ...form, name: e.target.value })}
+                            placeholder="Nombre del proveedor"
+                        />
+                    </div>
+                    <div className="mod-form-group">
+                        <label>RIF</label>
+                        <input
+                            value={form.rif}
+                            onChange={(e) => setForm({ ...form, rif: e.target.value })}
+                            placeholder="J-12345678-9"
+                        />
                     </div>
                 </div>
-            )}
+                <div className="mod-form-row">
+                    <div className="mod-form-group">
+                        <label>Teléfono</label>
+                        <input
+                            value={form.phone}
+                            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                            placeholder="0212-1234567"
+                        />
+                    </div>
+                    <div className="mod-form-group">
+                        <label>Correo (contacto)</label>
+                        <input
+                            type="email"
+                            value={form.email}
+                            onChange={(e) => setForm({ ...form, email: e.target.value })}
+                            placeholder="correo@proveedor.com"
+                        />
+                    </div>
+                </div>
+                <div className="mod-form-group">
+                    <label>Dirección</label>
+                    <input
+                        value={form.address}
+                        onChange={(e) => setForm({ ...form, address: e.target.value })}
+                        placeholder="Dirección completa"
+                    />
+                </div>
+                <div className="mod-form-group">
+                    <label>Categoría</label>
+                    <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
+                        <option>Agua</option>
+                        <option>Envases</option>
+                        <option>Equipos</option>
+                        <option>Insumos</option>
+                        <option>Transporte</option>
+                        <option>Otro</option>
+                    </select>
+                </div>
+            </ModFormModal>
         </div>
     );
 }
