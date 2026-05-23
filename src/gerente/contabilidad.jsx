@@ -15,9 +15,7 @@ import Swal from 'sweetalert2';
 import ModFormModal from '../components/ModFormModal';
 import ContabilidadGuia from './components/ContabilidadGuia';
 import * as contabService from './services/contabilidad.service';
-import '../assets/css/contabilidad.css';
-import '../assets/css/modulos.css';
-import '../assets/css/clientes.css';
+import { FORM_GROUP, FORM_ROW, FORM_HINT, BTN_MOD, BTN_MOD_PRIMARY } from '../ui/mod';
 
 const SEGMENTS = [
     { id: 'cuentas', label: 'Plan de cuentas', icon: FiLayers },
@@ -25,6 +23,23 @@ const SEGMENTS = [
     { id: 'balance', label: 'Balance general', icon: FiClipboard },
     { id: 'resultados', label: 'Estado de resultados', icon: FiTrendingUp },
 ];
+
+const TABLE = 'w-full border-collapse text-sm';
+const TH = 'border-b border-border bg-[#f8fafc] px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-muted';
+const TD = 'border-b border-[#f1f5f9] px-4 py-3 text-text';
+const BADGE_RES = 'inline-flex items-center rounded-md bg-[#eff6ff] px-2.5 py-1 text-xs font-semibold text-[#3b82f6]';
+const BTN_ADD = 'flex items-center gap-2 rounded-[10px] border border-accent bg-accent px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-[#0066b3]';
+const BTN_TABLE = 'flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-white text-muted transition hover:border-accent hover:text-accent';
+const BTN_TABLE_DEL = 'flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-white text-muted transition hover:border-[#ef4444] hover:text-[#ef4444] disabled:cursor-not-allowed disabled:opacity-40';
+const PANEL = 'rounded-[14px] border border-[#e2e8f0] bg-white p-5';
+const SEG_TITULO = 'mb-2 mt-5 text-sm font-bold uppercase tracking-[0.04em] text-[#475569]';
+const TOTAL_BASE = 'mt-3 flex items-center justify-between rounded-[10px] px-[18px] py-3.5 font-bold';
+const TOTAL_VARIANT = {
+    activo: 'bg-[#eff6ff] text-[#1d4ed8]',
+    pasivo: 'bg-[#f0fdf4] text-[#15803d]',
+    utilidad: 'bg-[#fef3c7] text-[#92400e]',
+    negativa: 'bg-[#fef2f2] text-[#b91c1c]',
+};
 
 function defaultFechas() {
     const hoy = new Date();
@@ -193,15 +208,15 @@ export default function Contabilidad() {
         const hintAsientos = 'Libro diario: lista asientos entre las fechas indicadas.';
 
         return (
-            <div className="contabilidad-filtros">
-                <p className="contabilidad-filtro-hint">
+            <div className="mb-5 rounded-xl border border-[#e2e8f0] bg-white p-4">
+                <p className="mb-3 flex items-start gap-2 text-[13px] leading-snug text-[#64748b]">
                     <FiInfo size={14} />
                     {segment === 'balance' && hintBalance}
                     {segment === 'resultados' && hintResultados}
                     {segment === 'asientos' && hintAsientos}
                 </p>
-                <div className="contabilidad-filtros-row">
-                    <div className="mod-form-group">
+                <div className="flex flex-wrap items-end gap-3">
+                    <div className={`${FORM_GROUP} !mb-0 min-w-[140px]`}>
                         <label>{segment === 'balance' ? 'Período (desde)' : 'Desde'}</label>
                         <input
                             type="date"
@@ -209,7 +224,7 @@ export default function Contabilidad() {
                             onChange={(e) => setFiltros({ ...filtros, fechaDesde: e.target.value })}
                         />
                     </div>
-                    <div className="mod-form-group">
+                    <div className={`${FORM_GROUP} !mb-0 min-w-[140px]`}>
                         <label>{segment === 'balance' ? 'Corte (hasta) *' : 'Hasta'}</label>
                         <input
                             type="date"
@@ -217,7 +232,7 @@ export default function Contabilidad() {
                             onChange={(e) => setFiltros({ ...filtros, fechaHasta: e.target.value })}
                         />
                     </div>
-                    <div className="mod-form-group">
+                    <div className={`${FORM_GROUP} !mb-0 min-w-[140px]`}>
                         <label>Sucursal</label>
                         <input
                             type="number"
@@ -226,8 +241,8 @@ export default function Contabilidad() {
                             onChange={(e) => setFiltros({ ...filtros, sucursalId: e.target.value })}
                         />
                     </div>
-                    <button type="button" className="btn-mod primary" onClick={loadSegment} disabled={loading}>
-                        <FiRefreshCw className={loading ? 'spin' : ''} /> Actualizar
+                    <button type="button" className={BTN_MOD_PRIMARY} onClick={loadSegment} disabled={loading}>
+                        <FiRefreshCw className={loading ? 'animate-spin' : ''} /> Actualizar
                     </button>
                 </div>
             </div>
@@ -235,27 +250,27 @@ export default function Contabilidad() {
     };
 
     const renderCuentas = () => (
-        <div className="contabilidad-panel">
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                <h3 style={{ margin: 0 }}>Plan de cuentas</h3>
-                <button type="button" className="btn-add-client" onClick={() => setShowCuentaModal(true)}>
+        <div className={PANEL}>
+            <div className="mb-4 flex justify-between">
+                <h3 className="m-0 font-display text-base text-text">Plan de cuentas</h3>
+                <button type="button" className={BTN_ADD} onClick={() => setShowCuentaModal(true)}>
                     <FiPlus /> Nueva cuenta
                 </button>
             </div>
-            <table className="clients-table">
+            <table className={TABLE}>
                 <thead>
                     <tr>
-                        <th>Código</th>
-                        <th>Nombre</th>
-                        <th>Tipo</th>
+                        <th className={TH}>Código</th>
+                        <th className={TH}>Nombre</th>
+                        <th className={TH}>Tipo</th>
                     </tr>
                 </thead>
                 <tbody>
                     {cuentas.map((c) => (
                         <tr key={c.id}>
-                            <td><strong>{c.codigo}</strong></td>
-                            <td>{c.nombre}</td>
-                            <td><span className="badge badge-res">{c.tipo}</span></td>
+                            <td className={TD}><strong>{c.codigo}</strong></td>
+                            <td className={TD}>{c.nombre}</td>
+                            <td className={TD}><span className={BADGE_RES}>{c.tipo}</span></td>
                         </tr>
                     ))}
                 </tbody>
@@ -264,55 +279,48 @@ export default function Contabilidad() {
     );
 
     const renderAsientos = () => (
-        <div className="contabilidad-panel">
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                <h3 style={{ margin: 0 }}>Libro diario</h3>
-                <button type="button" className="btn-add-client" onClick={() => setShowAsientoModal(true)}>
+        <div className={PANEL}>
+            <div className="mb-4 flex justify-between">
+                <h3 className="m-0 font-display text-base text-text">Libro diario</h3>
+                <button type="button" className={BTN_ADD} onClick={() => setShowAsientoModal(true)}>
                     <FiPlus /> Asiento manual
                 </button>
             </div>
             {diagnostico && (
-                <p className={`contabilidad-diag ${diagnostico.cuadra ? 'ok' : 'warn'}`}>
+                <p className={`mb-3 rounded-lg px-3 py-2 text-[13px] ${diagnostico.cuadra ? 'bg-[#dcfce7] text-[#166534]' : 'bg-[#fef3c7] text-[#92400e]'}`}>
                     Libro en período: Debe ${Number(diagnostico.totalDebe).toFixed(2)} · Haber $
                     {Number(diagnostico.totalHaber).toFixed(2)}
                     {diagnostico.cuadra ? ' · Cuadra' : ` · Diferencia $${Number(diagnostico.diferencia).toFixed(2)}`}
                 </p>
             )}
-            <table className="clients-table">
+            <table className={TABLE}>
                 <thead>
                     <tr>
-                        <th>Fecha</th>
-                        <th>Origen</th>
-                        <th>Referencia</th>
-                        <th>Debe</th>
-                        <th>Haber</th>
-                        <th />
+                        <th className={TH}>Fecha</th>
+                        <th className={TH}>Origen</th>
+                        <th className={TH}>Referencia</th>
+                        <th className={TH}>Debe</th>
+                        <th className={TH}>Haber</th>
+                        <th className={TH} />
                     </tr>
                 </thead>
                 <tbody>
                     {asientos.length === 0 && (
                         <tr>
-                            <td colSpan={6} className="td-muted" style={{ textAlign: 'center', padding: 24 }}>
+                            <td colSpan={6} className={`${TD} py-6 text-center text-muted`}>
                                 No hay asientos en el período. Las ventas y abonos generan asientos automáticos.
                             </td>
                         </tr>
                     )}
                     {asientos.map((a) => (
                         <tr key={a.id}>
-                            <td>{String(a.fecha || '').replace('T', ' ').slice(0, 16)}</td>
-                            <td>
-                                <span className="badge badge-res">{a.origen}</span>
-                            </td>
-                            <td>{a.referencia}</td>
-                            <td>${a.totalDebe.toFixed(2)}</td>
-                            <td>${a.totalHaber.toFixed(2)}</td>
-                            <td>
-                                <button
-                                    type="button"
-                                    className="btn-table-action"
-                                    title="Ver detalle"
-                                    onClick={() => verAsiento(a.id)}
-                                >
+                            <td className={TD}>{String(a.fecha || '').replace('T', ' ').slice(0, 16)}</td>
+                            <td className={TD}><span className={BADGE_RES}>{a.origen}</span></td>
+                            <td className={TD}>{a.referencia}</td>
+                            <td className={TD}>${a.totalDebe.toFixed(2)}</td>
+                            <td className={TD}>${a.totalHaber.toFixed(2)}</td>
+                            <td className={TD}>
+                                <button type="button" className={BTN_TABLE} title="Ver detalle" onClick={() => verAsiento(a.id)}>
                                     <FiEye />
                                 </button>
                             </td>
@@ -324,59 +332,55 @@ export default function Contabilidad() {
     );
 
     const renderBalance = () => {
-        if (!balance) return <p className="td-muted">Cargando balance...</p>;
+        if (!balance) return <p className="text-muted">Cargando balance...</p>;
         const t = balance.totales || {};
 
         return (
-            <div className="contabilidad-panel">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 12 }}>
+            <div className={PANEL}>
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h3 style={{ margin: 0 }}>Balance general</h3>
+                        <h3 className="m-0 font-display text-base text-text">Balance general</h3>
                         {balance.fechaCorte && (
-                            <p className="td-muted" style={{ margin: '4px 0 0', fontSize: 13 }}>
-                                Corte al {balance.fechaCorte}
-                            </p>
+                            <p className="mt-1 text-[13px] text-muted">Corte al {balance.fechaCorte}</p>
                         )}
                     </div>
-                    <span className={t.cuadra ? 'contabilidad-cuadra-ok' : 'contabilidad-cuadra-ok contabilidad-cuadra-warn'}>
+                    <span className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold ${t.cuadra ? 'bg-[#dcfce7] text-[#166534]' : 'bg-[#fef3c7] text-[#92400e]'}`}>
                         {t.cuadra ? <><FiCheck /> Activo = Pasivo + Patrimonio</> : <>Diferencia: ${Number(t.diferencia).toFixed(2)}</>}
                     </span>
                 </div>
-                {balance.nota && <p className="contabilidad-nota-reporte">{balance.nota}</p>}
+                {balance.nota && <p className="mb-4 rounded-lg border-l-[3px] border-[#3b82f6] bg-[#f8fafc] px-3 py-2.5 text-[13px] text-[#64748b]">{balance.nota}</p>}
                 {(balance.secciones || []).map((sec) => (
                     <div key={sec.tipo}>
-                        <p className="contabilidad-seccion-titulo">{sec.tipo}</p>
-                        <table className="clients-table">
+                        <p className={SEG_TITULO}>{sec.tipo}</p>
+                        <table className={TABLE}>
                             <thead>
                                 <tr>
-                                    <th>Código</th>
-                                    <th>Cuenta</th>
-                                    <th className="text-right">Saldo</th>
+                                    <th className={TH}>Código</th>
+                                    <th className={TH}>Cuenta</th>
+                                    <th className={`${TH} text-right`}>Saldo</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {(sec.cuentas || []).map((c, idx) => (
-                                    <tr key={c.cuentaId ?? `calc-${idx}`} className={c.esCalculado ? 'fila-calculada' : ''}>
-                                        <td>{c.codigo}</td>
-                                        <td>{c.nombre}</td>
-                                        <td className="text-right" style={{ fontWeight: 700 }}>
-                                            ${Number(c.saldo).toFixed(2)}
-                                        </td>
+                                    <tr key={c.cuentaId ?? `calc-${idx}`} className={c.esCalculado ? '[&>td]:italic [&>td]:text-[#0369a1]' : ''}>
+                                        <td className={TD}>{c.codigo}</td>
+                                        <td className={TD}>{c.nombre}</td>
+                                        <td className={`${TD} text-right font-bold`}>${Number(c.saldo).toFixed(2)}</td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
-                        <div className={`contabilidad-reporte-total ${sec.tipo === 'Activo' ? 'activo' : 'pasivo'}`}>
+                        <div className={`${TOTAL_BASE} ${sec.tipo === 'Activo' ? TOTAL_VARIANT.activo : TOTAL_VARIANT.pasivo}`}>
                             <span>Subtotal {sec.tipo}</span>
                             <span>${Number(sec.subtotal).toFixed(2)}</span>
                         </div>
                     </div>
                 ))}
-                <div className="contabilidad-reporte-total activo" style={{ marginTop: 20 }}>
+                <div className={`${TOTAL_BASE} ${TOTAL_VARIANT.activo} mt-5`}>
                     <span>Total activo</span>
                     <span>${Number(t.activo).toFixed(2)}</span>
                 </div>
-                <div className="contabilidad-reporte-total pasivo">
+                <div className={`${TOTAL_BASE} ${TOTAL_VARIANT.pasivo}`}>
                     <span>Total pasivo + patrimonio</span>
                     <span>${Number(t.pasivoPatrimonio).toFixed(2)}</span>
                 </div>
@@ -385,31 +389,31 @@ export default function Contabilidad() {
     };
 
     const renderResultados = () => {
-        if (!resultados) return <p className="td-muted">Cargando estado de resultados...</p>;
+        if (!resultados) return <p className="text-muted">Cargando estado de resultados...</p>;
         const tot = resultados.totales || {};
 
         const tablaSeccion = (titulo, filas) => (
             <>
-                <p className="contabilidad-seccion-titulo">{titulo}</p>
-                <table className="clients-table">
+                <p className={SEG_TITULO}>{titulo}</p>
+                <table className={TABLE}>
                     <thead>
                         <tr>
-                            <th>Código</th>
-                            <th>Cuenta</th>
-                            <th className="text-right">Monto</th>
+                            <th className={TH}>Código</th>
+                            <th className={TH}>Cuenta</th>
+                            <th className={`${TH} text-right`}>Monto</th>
                         </tr>
                     </thead>
                     <tbody>
                         {(filas || []).length === 0 && (
                             <tr>
-                                <td colSpan={3} className="td-muted">Sin movimientos</td>
+                                <td colSpan={3} className={`${TD} text-muted`}>Sin movimientos</td>
                             </tr>
                         )}
                         {(filas || []).map((c) => (
                             <tr key={c.cuentaId}>
-                                <td>{c.codigo}</td>
-                                <td>{c.nombre}</td>
-                                <td className="text-right">${Number(c.saldo).toFixed(2)}</td>
+                                <td className={TD}>{c.codigo}</td>
+                                <td className={TD}>{c.nombre}</td>
+                                <td className={`${TD} text-right`}>${Number(c.saldo).toFixed(2)}</td>
                             </tr>
                         ))}
                     </tbody>
@@ -418,25 +422,25 @@ export default function Contabilidad() {
         );
 
         return (
-            <div className="contabilidad-panel">
-                <h3 style={{ marginTop: 0 }}>Estado de resultados</h3>
-                {resultados.nota && <p className="contabilidad-nota-reporte">{resultados.nota}</p>}
+            <div className={PANEL}>
+                <h3 className="mt-0 font-display text-base text-text">Estado de resultados</h3>
+                {resultados.nota && <p className="mb-4 rounded-lg border-l-[3px] border-[#3b82f6] bg-[#f8fafc] px-3 py-2.5 text-[13px] text-[#64748b]">{resultados.nota}</p>}
                 {resultados.fechaDesde && (
-                    <p className="td-muted" style={{ fontSize: 13 }}>
+                    <p className="text-[13px] text-muted">
                         Período: {resultados.fechaDesde} al {resultados.fechaHasta}
                     </p>
                 )}
                 {tablaSeccion('Ingresos', resultados.ingresos)}
-                <div className="contabilidad-reporte-total activo">
+                <div className={`${TOTAL_BASE} ${TOTAL_VARIANT.activo}`}>
                     <span>Total ingresos</span>
                     <span>${Number(tot.ingresos).toFixed(2)}</span>
                 </div>
                 {tablaSeccion('Egresos', resultados.egresos)}
-                <div className="contabilidad-reporte-total pasivo">
+                <div className={`${TOTAL_BASE} ${TOTAL_VARIANT.pasivo}`}>
                     <span>Total egresos</span>
                     <span>${Number(tot.egresos).toFixed(2)}</span>
                 </div>
-                <div className={`contabilidad-reporte-total utilidad ${Number(tot.utilidadNeta) < 0 ? 'negativa' : ''}`}>
+                <div className={`${TOTAL_BASE} ${Number(tot.utilidadNeta) < 0 ? TOTAL_VARIANT.negativa : TOTAL_VARIANT.utilidad}`}>
                     <span>Utilidad neta del período</span>
                     <span>${Number(tot.utilidadNeta).toFixed(2)}</span>
                 </div>
@@ -445,30 +449,34 @@ export default function Contabilidad() {
     };
 
     return (
-        <div className="contabilidad-container">
+        <div className="relative p-2.5">
             {loading && (
-                <div className="loading-overlay">
-                    <FiRefreshCw className="loading-spinner spin" />
+                <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-white/60">
+                    <FiRefreshCw className="animate-spin text-3xl text-accent" />
                 </div>
             )}
 
-            <div className="contabilidad-header">
-                <div className="title-section">
-                    <h1>Contabilidad</h1>
-                    <p>Plan de cuentas, libro diario, balance general y estado de resultados</p>
+            <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <h1 className="font-display text-[28px] text-text">Contabilidad</h1>
+                    <p className="mt-1 text-sm text-muted">Plan de cuentas, libro diario, balance general y estado de resultados</p>
                 </div>
             </div>
 
             <ContabilidadGuia open={showGuia} onToggle={() => setShowGuia((v) => !v)} />
 
-            <div className="contabilidad-segments" role="tablist">
+            <div className="mb-5 flex flex-wrap gap-2" role="tablist">
                 {SEGMENTS.map((s) => (
                     <button
                         key={s.id}
                         type="button"
                         role="tab"
                         aria-selected={segment === s.id}
-                        className={`contabilidad-segment-btn ${segment === s.id ? 'active' : ''}`}
+                        className={`inline-flex cursor-pointer items-center gap-2 rounded-[10px] border px-4 py-2.5 text-[13px] font-semibold transition ${
+                            segment === s.id
+                                ? 'border-accent bg-accent/[0.08] text-accent'
+                                : 'border-[#e2e8f0] bg-white text-[#64748b]'
+                        }`}
                         onClick={() => setSegment(s.id)}
                     >
                         <s.icon /> {s.label}
@@ -489,45 +497,39 @@ export default function Contabilidad() {
                 title="Detalle del asiento"
                 wide
                 footer={
-                    <button type="button" className="btn-mod" onClick={() => setAsientoDetalle(null)}>
+                    <button type="button" className={BTN_MOD} onClick={() => setAsientoDetalle(null)}>
                         Cerrar
                     </button>
                 }
             >
                 {asientoDetalle && (
                     <>
-                        <p className="td-muted" style={{ marginBottom: 12 }}>
+                        <p className="mb-3 text-muted">
                             {asientoDetalle.origen} · {asientoDetalle.referencia} ·{' '}
                             {String(asientoDetalle.fecha || '').slice(0, 16)}
                         </p>
-                        <table className="clients-table">
+                        <table className={TABLE}>
                             <thead>
                                 <tr>
-                                    <th>Cuenta</th>
-                                    <th className="text-right">Debe</th>
-                                    <th className="text-right">Haber</th>
+                                    <th className={TH}>Cuenta</th>
+                                    <th className={`${TH} text-right`}>Debe</th>
+                                    <th className={`${TH} text-right`}>Haber</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {(asientoDetalle.detalles || []).map((d) => (
                                     <tr key={d.id}>
-                                        <td>
-                                            {d.cuentaCodigo} — {d.cuentaNombre}
-                                        </td>
-                                        <td className="text-right">
-                                            {d.debe > 0 ? `$${d.debe.toFixed(2)}` : '—'}
-                                        </td>
-                                        <td className="text-right">
-                                            {d.haber > 0 ? `$${d.haber.toFixed(2)}` : '—'}
-                                        </td>
+                                        <td className={TD}>{d.cuentaCodigo} — {d.cuentaNombre}</td>
+                                        <td className={`${TD} text-right`}>{d.debe > 0 ? `$${d.debe.toFixed(2)}` : '—'}</td>
+                                        <td className={`${TD} text-right`}>{d.haber > 0 ? `$${d.haber.toFixed(2)}` : '—'}</td>
                                     </tr>
                                 ))}
                             </tbody>
                             <tfoot>
-                                <tr style={{ fontWeight: 700 }}>
-                                    <td>Totales</td>
-                                    <td className="text-right">${asientoDetalle.totalDebe.toFixed(2)}</td>
-                                    <td className="text-right">${asientoDetalle.totalHaber.toFixed(2)}</td>
+                                <tr className="font-bold">
+                                    <td className={TD}>Totales</td>
+                                    <td className={`${TD} text-right`}>${asientoDetalle.totalDebe.toFixed(2)}</td>
+                                    <td className={`${TD} text-right`}>${asientoDetalle.totalHaber.toFixed(2)}</td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -541,16 +543,16 @@ export default function Contabilidad() {
                 title="Nueva cuenta contable"
                 footer={
                     <>
-                        <button type="button" className="btn-mod" onClick={() => setShowCuentaModal(false)}>
+                        <button type="button" className={BTN_MOD} onClick={() => setShowCuentaModal(false)}>
                             Cancelar
                         </button>
-                        <button type="button" className="btn-mod primary" onClick={handleSaveCuenta}>
+                        <button type="button" className={BTN_MOD_PRIMARY} onClick={handleSaveCuenta}>
                             <FiCheck /> Guardar
                         </button>
                     </>
                 }
             >
-                <div className="mod-form-group">
+                <div className={FORM_GROUP}>
                     <label>Código</label>
                     <input
                         value={cuentaForm.codigo}
@@ -558,23 +560,21 @@ export default function Contabilidad() {
                         placeholder="Ej. 1.1.05"
                     />
                 </div>
-                <div className="mod-form-group">
+                <div className={FORM_GROUP}>
                     <label>Nombre</label>
                     <input
                         value={cuentaForm.nombre}
                         onChange={(e) => setCuentaForm({ ...cuentaForm, nombre: e.target.value })}
                     />
                 </div>
-                <div className="mod-form-group">
+                <div className={FORM_GROUP}>
                     <label>Tipo</label>
                     <select
                         value={cuentaForm.tipo}
                         onChange={(e) => setCuentaForm({ ...cuentaForm, tipo: e.target.value })}
                     >
                         {contabService.TIPOS_CUENTA.map((t) => (
-                            <option key={t} value={t}>
-                                {t}
-                            </option>
+                            <option key={t} value={t}>{t}</option>
                         ))}
                     </select>
                 </div>
@@ -587,17 +587,17 @@ export default function Contabilidad() {
                 wide
                 footer={
                     <>
-                        <button type="button" className="btn-mod" onClick={() => setShowAsientoModal(false)}>
+                        <button type="button" className={BTN_MOD} onClick={() => setShowAsientoModal(false)}>
                             Cancelar
                         </button>
-                        <button type="button" className="btn-mod primary" onClick={handleSaveAsiento}>
+                        <button type="button" className={BTN_MOD_PRIMARY} onClick={handleSaveAsiento}>
                             <FiCheck /> Registrar asiento
                         </button>
                     </>
                 }
             >
-                <div className="mod-form-row">
-                    <div className="mod-form-group">
+                <div className={FORM_ROW}>
+                    <div className={FORM_GROUP}>
                         <label>Referencia</label>
                         <input
                             value={asientoForm.referencia}
@@ -606,14 +606,14 @@ export default function Contabilidad() {
                         />
                     </div>
                 </div>
-                <p className="mod-form-hint">
+                <p className={FORM_HINT}>
                     Debe: ${totalesAsiento.debe.toFixed(2)} — Haber: ${totalesAsiento.haber.toFixed(2)}
                     {!totalesAsiento.cuadra && ' (no cuadra)'}
                 </p>
-                <div className="contabilidad-asiento-lineas">
+                <div className="my-3 flex flex-col gap-2.5">
                     {asientoForm.lineas.map((linea, idx) => (
-                        <div className="contabilidad-asiento-linea" key={idx}>
-                            <div className="mod-form-group">
+                        <div className="grid grid-cols-[1fr_100px_100px_40px] items-end gap-2.5 max-[768px]:grid-cols-1" key={idx}>
+                            <div className={`${FORM_GROUP} !mb-0`}>
                                 <label>Cuenta</label>
                                 <select
                                     value={linea.cuentaId}
@@ -625,13 +625,11 @@ export default function Contabilidad() {
                                 >
                                     <option value="">Seleccionar...</option>
                                     {cuentas.map((c) => (
-                                        <option key={c.id} value={c.id}>
-                                            {c.codigo} — {c.nombre}
-                                        </option>
+                                        <option key={c.id} value={c.id}>{c.codigo} — {c.nombre}</option>
                                     ))}
                                 </select>
                             </div>
-                            <div className="mod-form-group">
+                            <div className={`${FORM_GROUP} !mb-0`}>
                                 <label>Debe</label>
                                 <input
                                     type="number"
@@ -645,7 +643,7 @@ export default function Contabilidad() {
                                     }}
                                 />
                             </div>
-                            <div className="mod-form-group">
+                            <div className={`${FORM_GROUP} !mb-0`}>
                                 <label>Haber</label>
                                 <input
                                     type="number"
@@ -661,7 +659,7 @@ export default function Contabilidad() {
                             </div>
                             <button
                                 type="button"
-                                className="btn-table-action delete"
+                                className={BTN_TABLE_DEL}
                                 title="Quitar línea"
                                 disabled={asientoForm.lineas.length <= 2}
                                 onClick={() => {
@@ -676,7 +674,7 @@ export default function Contabilidad() {
                 </div>
                 <button
                     type="button"
-                    className="btn-mod"
+                    className={BTN_MOD}
                     onClick={() =>
                         setAsientoForm({
                             ...asientoForm,

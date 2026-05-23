@@ -1,12 +1,19 @@
 import { useState, useEffect } from 'react';
 import {
     FiTruck, FiSearch, FiRefreshCw, FiPlus, FiEdit2, FiTrash2, FiX,
-    FiMapPin, FiUser, FiClock, FiCheck, FiChevronLeft, FiChevronRight, FiPackage
+    FiMapPin, FiClock, FiCheck, FiChevronLeft, FiChevronRight
 } from 'react-icons/fi';
 import Swal from 'sweetalert2';
 import * as entregaService from './services/entrega.service';
 import * as clientService from './services/clientes.service';
-import '../assets/css/modulos.css';
+import {
+    MODULE_CONTAINER, MODULE_HEADER, HEADER_ACTIONS, BTN_MOD, BTN_MOD_PRIMARY,
+    STATS, STAT_CARD, STAT_ICON, STAT_ICON_BASE, STAT_VAL, STAT_LBL,
+    CONTROLS, SEARCH_BOX, SEARCH_ICON, SEARCH_INPUT, FILTER_SELECT,
+    TABLE_WRAP, TABLE, EMPTY, CELL_INFO, AVATAR_BASE, AVATAR_COLOR,
+    ACTIONS, ACTION_BTN, ACTION_BTN_DEL, PAGINATION, PAGE_BTNS, PAGE_BTN,
+    MODAL_OVERLAY, MODAL, MODAL_HEADER, MODAL_CLOSE, MODAL_BODY, MODAL_FOOTER, FORM_GROUP,
+} from '../ui/mod';
 
 const STATUS_LABELS = {
     pendiente: 'Pendiente',
@@ -78,7 +85,6 @@ export default function Entregas() {
         setShowModal(true);
     };
 
-    // Filters
     const filtered = entregas.filter(e => {
         const q = searchTerm.toLowerCase();
         const matchSearch = !q || e.id?.toLowerCase().includes(q) || e.clientName?.toLowerCase().includes(q) || e.address?.toLowerCase().includes(q);
@@ -90,51 +96,38 @@ export default function Entregas() {
     const paginated = filtered.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
     useEffect(() => { setCurrentPage(1); }, [searchTerm, statusFilter]);
 
-    // Stats
     const pending = entregas.filter(e => e.status === 'pendiente').length;
     const enCamino = entregas.filter(e => e.status === 'en_camino').length;
     const completed = entregas.filter(e => e.status === 'completada').length;
 
     return (
-        <div className="module-container">
-            <div className="module-header">
+        <div className={MODULE_CONTAINER}>
+            <div className={MODULE_HEADER}>
                 <div className="title-section">
                     <h1>Entregas</h1>
                     <p>Gestión y seguimiento de entregas de pedidos</p>
                 </div>
-                <div className="module-header-actions">
-                    <button className="btn-mod" onClick={loadData}><FiRefreshCw /> Actualizar</button>
-                    <button className="btn-mod primary" onClick={() => { setEditingItem(null); setForm({ clientId: '', address: '', items: '', notes: '' }); setShowModal(true); }}>
+                <div className={HEADER_ACTIONS}>
+                    <button className={BTN_MOD} onClick={loadData}><FiRefreshCw /> Actualizar</button>
+                    <button className={BTN_MOD_PRIMARY} onClick={() => { setEditingItem(null); setForm({ clientId: '', address: '', items: '', notes: '' }); setShowModal(true); }}>
                         <FiPlus /> Nueva Entrega
                     </button>
                 </div>
             </div>
 
-            <div className="mod-stats">
-                <div className="mod-stat-card">
-                    <div className="mod-stat-icon blue"><FiTruck /></div>
-                    <div className="mod-stat-info"><p className="mod-val">{entregas.length}</p><p className="mod-lbl">Total Entregas</p></div>
-                </div>
-                <div className="mod-stat-card">
-                    <div className="mod-stat-icon amber"><FiClock /></div>
-                    <div className="mod-stat-info"><p className="mod-val">{pending}</p><p className="mod-lbl">Pendientes</p></div>
-                </div>
-                <div className="mod-stat-card">
-                    <div className="mod-stat-icon cyan"><FiTruck /></div>
-                    <div className="mod-stat-info"><p className="mod-val">{enCamino}</p><p className="mod-lbl">En Camino</p></div>
-                </div>
-                <div className="mod-stat-card">
-                    <div className="mod-stat-icon green"><FiCheck /></div>
-                    <div className="mod-stat-info"><p className="mod-val">{completed}</p><p className="mod-lbl">Completadas</p></div>
-                </div>
+            <div className={STATS}>
+                <div className={STAT_CARD}><div className={`${STAT_ICON_BASE} ${STAT_ICON.blue}`}><FiTruck /></div><div><p className={STAT_VAL}>{entregas.length}</p><p className={STAT_LBL}>Total Entregas</p></div></div>
+                <div className={STAT_CARD}><div className={`${STAT_ICON_BASE} ${STAT_ICON.amber}`}><FiClock /></div><div><p className={STAT_VAL}>{pending}</p><p className={STAT_LBL}>Pendientes</p></div></div>
+                <div className={STAT_CARD}><div className={`${STAT_ICON_BASE} ${STAT_ICON.cyan}`}><FiTruck /></div><div><p className={STAT_VAL}>{enCamino}</p><p className={STAT_LBL}>En Camino</p></div></div>
+                <div className={STAT_CARD}><div className={`${STAT_ICON_BASE} ${STAT_ICON.green}`}><FiCheck /></div><div><p className={STAT_VAL}>{completed}</p><p className={STAT_LBL}>Completadas</p></div></div>
             </div>
 
-            <div className="mod-controls">
-                <div className="search-box">
-                    <FiSearch className="search-icon" />
-                    <input className="search-input" placeholder="Buscar por ID, cliente o dirección..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+            <div className={CONTROLS}>
+                <div className={SEARCH_BOX}>
+                    <FiSearch className={SEARCH_ICON} />
+                    <input className={SEARCH_INPUT} placeholder="Buscar por ID, cliente o dirección..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                 </div>
-                <select className="filter-select" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+                <select className={FILTER_SELECT} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
                     <option value="all">Todos los estados</option>
                     <option value="pendiente">Pendiente</option>
                     <option value="en_camino">En Camino</option>
@@ -143,20 +136,20 @@ export default function Entregas() {
                 </select>
             </div>
 
-            <div className="mod-table-wrap">
+            <div className={TABLE_WRAP}>
                 {filtered.length === 0 ? (
-                    <div className="mod-empty"><FiTruck /><h3>{isLoading ? 'Cargando...' : 'Sin entregas'}</h3><p>Crea tu primera entrega para comenzar</p></div>
+                    <div className={EMPTY}><FiTruck /><h3>{isLoading ? 'Cargando...' : 'Sin entregas'}</h3><p>Crea tu primera entrega para comenzar</p></div>
                 ) : (
                     <>
-                        <table className="mod-table">
+                        <table className={TABLE}>
                             <thead><tr><th>ID</th><th>Cliente</th><th>Dirección</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr></thead>
                             <tbody>
                                 {paginated.map(e => (
                                     <tr key={e.id}>
                                         <td><span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--accent)', background: '#eff6ff', padding: '3px 8px', borderRadius: '6px', fontSize: '13px' }}>{e.id}</span></td>
                                         <td>
-                                            <div className="mod-cell-info">
-                                                <div className="mod-avatar blue">{e.clientName?.charAt(0)?.toUpperCase() || '?'}</div>
+                                            <div className={CELL_INFO}>
+                                                <div className={`${AVATAR_BASE} ${AVATAR_COLOR.blue}`}>{e.clientName?.charAt(0)?.toUpperCase() || '?'}</div>
                                                 <div className="cell-text"><p style={{ fontWeight: 600 }}>{e.clientName || 'Sin cliente'}</p></div>
                                             </div>
                                         </td>
@@ -169,9 +162,9 @@ export default function Entregas() {
                                             </select>
                                         </td>
                                         <td>
-                                            <div className="mod-actions">
-                                                <button onClick={() => openEdit(e)}><FiEdit2 /></button>
-                                                <button className="del" onClick={() => handleDelete(e.id)}><FiTrash2 /></button>
+                                            <div className={ACTIONS}>
+                                                <button className={ACTION_BTN} onClick={() => openEdit(e)}><FiEdit2 /></button>
+                                                <button className={`${ACTION_BTN} ${ACTION_BTN_DEL}`} onClick={() => handleDelete(e.id)}><FiTrash2 /></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -179,11 +172,11 @@ export default function Entregas() {
                             </tbody>
                         </table>
                         {totalPages > 1 && (
-                            <div className="mod-pagination">
+                            <div className={PAGINATION}>
                                 <span>{(currentPage-1)*rowsPerPage+1}–{Math.min(currentPage*rowsPerPage, filtered.length)} de {filtered.length}</span>
-                                <div className="page-btns">
-                                    <button disabled={currentPage<=1} onClick={()=>setCurrentPage(p=>p-1)}><FiChevronLeft /></button>
-                                    <button disabled={currentPage>=totalPages} onClick={()=>setCurrentPage(p=>p+1)}><FiChevronRight /></button>
+                                <div className={PAGE_BTNS}>
+                                    <button className={PAGE_BTN} disabled={currentPage<=1} onClick={()=>setCurrentPage(p=>p-1)}><FiChevronLeft /></button>
+                                    <button className={PAGE_BTN} disabled={currentPage>=totalPages} onClick={()=>setCurrentPage(p=>p+1)}><FiChevronRight /></button>
                                 </div>
                             </div>
                         )}
@@ -192,35 +185,35 @@ export default function Entregas() {
             </div>
 
             {showModal && (
-                <div className="mod-modal-overlay" onClick={() => setShowModal(false)}>
-                    <div className="mod-modal" onClick={ev => ev.stopPropagation()}>
-                        <div className="mod-modal-header">
+                <div className={MODAL_OVERLAY} onClick={() => setShowModal(false)}>
+                    <div className={MODAL} onClick={ev => ev.stopPropagation()}>
+                        <div className={MODAL_HEADER}>
                             <h2>{editingItem ? 'Editar Entrega' : 'Nueva Entrega'}</h2>
-                            <button className="btn-close" onClick={() => setShowModal(false)}><FiX /></button>
+                            <button className={MODAL_CLOSE} onClick={() => setShowModal(false)}><FiX /></button>
                         </div>
-                        <div className="mod-modal-body">
-                            <div className="mod-form-group">
+                        <div className={MODAL_BODY}>
+                            <div className={FORM_GROUP}>
                                 <label>Cliente</label>
                                 <select value={form.clientId} onChange={e => setForm({...form, clientId: e.target.value})}>
                                     <option value="">Seleccionar cliente...</option>
                                     {clients.map(c => <option key={c.id} value={c.id}>{c.name} — {c.cedula}</option>)}
                                 </select>
                             </div>
-                            <div className="mod-form-group">
+                            <div className={FORM_GROUP}>
                                 <label>Dirección de Entrega</label>
                                 <input placeholder="Dirección completa..." value={form.address} onChange={e => setForm({...form, address: e.target.value})} />
                             </div>
-                            <div className="mod-form-group">
+                            <div className={FORM_GROUP}>
                                 <label>Productos / Items</label>
                                 <input placeholder="Ej: 3x Botellón 20L, 2x Botellón 10L" value={form.items} onChange={e => setForm({...form, items: e.target.value})} />
                             </div>
-                            <div className="mod-form-group">
+                            <div className={FORM_GROUP}>
                                 <label>Notas</label>
                                 <textarea rows={3} placeholder="Observaciones adicionales..." value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} />
                             </div>
-                            <div className="mod-modal-footer">
-                                <button className="btn-mod" onClick={() => setShowModal(false)}>Cancelar</button>
-                                <button className="btn-mod primary" onClick={handleSave}><FiCheck /> Guardar</button>
+                            <div className={MODAL_FOOTER}>
+                                <button className={BTN_MOD} onClick={() => setShowModal(false)}>Cancelar</button>
+                                <button className={BTN_MOD_PRIMARY} onClick={handleSave}><FiCheck /> Guardar</button>
                             </div>
                         </div>
                     </div>

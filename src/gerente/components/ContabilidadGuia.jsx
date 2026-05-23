@@ -1,17 +1,25 @@
 import { FiChevronDown, FiChevronUp, FiInfo } from 'react-icons/fi';
 
+const H4 = 'mb-1.5 mt-3 text-[13px] font-semibold text-[#1e293b]';
+const OL = 'mb-2 list-decimal pl-5';
+const UL = 'mb-2 list-disc pl-5';
+
 export default function ContabilidadGuia({ open, onToggle }) {
     return (
-        <div className="contabilidad-guia">
-            <button type="button" className="contabilidad-guia-toggle" onClick={onToggle}>
+        <div className="mb-5 overflow-hidden rounded-xl border border-[#bfdbfe] bg-[#f8fafc]">
+            <button
+                type="button"
+                className="flex w-full cursor-pointer items-center gap-2.5 border-none bg-transparent px-4 py-3 text-left font-semibold text-[#0369a1]"
+                onClick={onToggle}
+            >
                 <FiInfo />
                 <span>¿Cómo usar el módulo contable?</span>
                 {open ? <FiChevronUp /> : <FiChevronDown />}
             </button>
             {open && (
-                <div className="contabilidad-guia-body">
-                    <h4>Flujo recomendado</h4>
-                    <ol>
+                <div className="px-5 pb-4 text-sm leading-relaxed text-[#475569]">
+                    <h4 className={H4}>Flujo recomendado</h4>
+                    <ol className={OL}>
                         <li>
                             <strong>Plan de cuentas</strong> — Revise que existan las cuentas del negocio
                             (Caja, Bancos, Cuentas por cobrar, Ingresos, etc.). Puede crear cuentas nuevas sin
@@ -35,8 +43,8 @@ export default function ContabilidadGuia({ open, onToggle }) {
                         </li>
                     </ol>
 
-                    <h4>Asientos automáticos</h4>
-                    <ul>
+                    <h4 className={H4}>Asientos automáticos</h4>
+                    <ul className={UL}>
                         <li>
                             <strong>Venta al contado</strong> — Debe: Caja o Bancos · Haber: cuenta de ingreso del
                             producto (configurada en Inventario).
@@ -49,7 +57,7 @@ export default function ContabilidadGuia({ open, onToggle }) {
                         </li>
                     </ul>
 
-                    <h4>Cierre contable (manual)</h4>
+                    <h4 className={H4}>Cierre contable (manual)</h4>
                     <p>
                         Para llevar la utilidad a <strong>Resultados acumulados (3.1.02)</strong>, registre un
                         asiento manual de cierre: cierre ingresos y egresos contra Resultados acumulados. Hasta
@@ -57,7 +65,7 @@ export default function ContabilidadGuia({ open, onToggle }) {
                         que la ecuación cuadre.
                     </p>
 
-                    <h4>Partida doble</h4>
+                    <h4 className={H4}>Partida doble</h4>
                     <p>
                         Todo asiento manual debe cumplir: suma del <strong>Debe</strong> = suma del{' '}
                         <strong>Haber</strong>. Si el balance no cuadra, revise el libro diario y que todas las

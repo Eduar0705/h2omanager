@@ -16,7 +16,13 @@ import Swal from 'sweetalert2';
 import * as ventaService from './services/ventas.service';
 import * as configService from './services/config.service';
 import { descargarDocumentoPdf } from './utils/factura-pdf';
-import '../assets/css/historial.css';
+
+const TH = 'border-b border-border bg-[#f8fafc] px-4 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted';
+const TD = 'border-b border-[#f1f5f9] px-4 py-3.5 align-middle text-text';
+const STAT_ICON = {
+    blue: 'bg-[#eff6ff] text-[#3b82f6]',
+    green: 'bg-[#f0fdf4] text-[#22c55e]',
+};
 
 export default function Historial() {
     const [docs, setDocs] = useState([]);
@@ -109,10 +115,7 @@ export default function Historial() {
             } catch {
                 /* opcional */
             }
-            descargarDocumentoPdf(doc, {
-                empresaNombre: 'H2O MANAGER',
-                empresaRif,
-            });
+            descargarDocumentoPdf(doc, { empresaNombre: 'H2O MANAGER', empresaRif });
         } catch (e) {
             Swal.fire('Error', e?.message || 'No se pudo generar el PDF', 'error');
         } finally {
@@ -121,50 +124,62 @@ export default function Historial() {
     };
 
     return (
-        <div className="historial-container">
-            <div className="historial-header">
-                <div className="title-section">
-                    <h1>Historial de Documentos</h1>
+        <div className="animate-fade-up p-2.5">
+            <div className="mb-7 flex items-start justify-between max-md:flex-col max-md:gap-4">
+                <div>
+                    <h1 className="font-display text-[28px] text-text">Historial de Documentos</h1>
                 </div>
-                <button className="btn-refresh" onClick={loadData} disabled={isLoading}>
-                    <FiRefreshCw className={isLoading ? 'spin' : ''} /> Actualizar
+                <button
+                    className="flex items-center gap-2 rounded-[10px] border border-border bg-surface px-5 py-2.5 text-[13px] font-semibold text-text transition hover:-translate-y-0.5 hover:border-accent hover:text-accent"
+                    onClick={loadData}
+                    disabled={isLoading}
+                >
+                    <FiRefreshCw className={isLoading ? 'animate-spin' : ''} /> Actualizar
                 </button>
             </div>
 
-            <div className="historial-stats">
-                <div className="hist-stat">
-                    <div className="hist-stat-icon blue"><FiHash /></div>
-                    <div className="hist-stat-info">
-                        <p className="stat-value">{totalDocs}</p>
-                        <p className="stat-label">Documentos</p>
+            <div className="mb-7 grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-4">
+                <div className="flex items-center gap-3.5 rounded-[14px] border border-border bg-surface px-[22px] py-5 transition hover:-translate-y-[3px]">
+                    <div className={`flex h-11 w-11 items-center justify-center rounded-xl text-xl ${STAT_ICON.blue}`}><FiHash /></div>
+                    <div>
+                        <p className="font-display text-[22px] leading-none text-text">{totalDocs}</p>
+                        <p className="mt-1 text-xs font-medium text-muted">Documentos</p>
                     </div>
                 </div>
-                <div className="hist-stat">
-                    <div className="hist-stat-icon green"><FiCreditCard /></div>
-                    <div className="hist-stat-info">
-                        <p className="stat-value">${totalMonto.toFixed(2)}</p>
-                        <p className="stat-label">Total</p>
+                <div className="flex items-center gap-3.5 rounded-[14px] border border-border bg-surface px-[22px] py-5 transition hover:-translate-y-[3px]">
+                    <div className={`flex h-11 w-11 items-center justify-center rounded-xl text-xl ${STAT_ICON.green}`}><FiCreditCard /></div>
+                    <div>
+                        <p className="font-display text-[22px] leading-none text-text">${totalMonto.toFixed(2)}</p>
+                        <p className="mt-1 text-xs font-medium text-muted">Total</p>
                     </div>
                 </div>
             </div>
 
-            <div className="historial-controls">
-                <div className="search-box">
-                    <FiSearch className="search-icon" />
+            <div className="mb-5 flex flex-wrap items-center gap-3 max-md:flex-col">
+                <div className="relative min-w-[240px] flex-1 max-md:w-full">
+                    <FiSearch className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-muted" />
                     <input
                         type="text"
-                        className="search-input"
+                        className="w-full rounded-[10px] border border-border bg-surface py-2.5 pl-10 pr-2.5 text-sm outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/[0.08]"
                         placeholder="Buscar por correlativo, cliente o sucursal..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <select className="filter-select" value={tipoDocFilter} onChange={(e) => setTipoDocFilter(e.target.value)}>
+                <select
+                    className="min-w-[130px] cursor-pointer rounded-[10px] border border-border bg-surface px-4 py-2.5 text-[13px] text-text outline-none focus:border-accent max-md:w-full"
+                    value={tipoDocFilter}
+                    onChange={(e) => setTipoDocFilter(e.target.value)}
+                >
                     <option value="all">Todos los tipos</option>
                     <option value="Factura">Factura</option>
                     <option value="Nota de Crédito">Nota de Crédito</option>
                 </select>
-                <select className="filter-select" value={estadoFilter} onChange={(e) => setEstadoFilter(e.target.value)}>
+                <select
+                    className="min-w-[130px] cursor-pointer rounded-[10px] border border-border bg-surface px-4 py-2.5 text-[13px] text-text outline-none focus:border-accent max-md:w-full"
+                    value={estadoFilter}
+                    onChange={(e) => setEstadoFilter(e.target.value)}
+                >
                     <option value="all">Todos los estados</option>
                     {[...new Set(docs.map((d) => d.estado).filter(Boolean))].map((estado) => (
                         <option key={estado} value={estado}>{estado}</option>
@@ -172,56 +187,72 @@ export default function Historial() {
                 </select>
             </div>
 
-            <div className="historial-table-wrap">
+            <div className="mb-5 overflow-hidden rounded-[14px] border border-border bg-surface max-md:overflow-x-auto">
                 {filteredDocs.length === 0 ? (
-                    <div className="hist-empty">
-                        <div className="hist-empty-icon"><FiClock /></div>
-                        <h3>{isLoading ? 'Cargando...' : 'Sin documentos'}</h3>
-                        <p>{isLoading ? 'Obteniendo datos de la API' : 'No hay datos para los filtros aplicados'}</p>
+                    <div className="px-5 py-[60px] text-center text-muted">
+                        <div className="mb-3 text-5xl opacity-40"><FiClock className="mx-auto" /></div>
+                        <h3 className="mb-2 text-lg text-text">{isLoading ? 'Cargando...' : 'Sin documentos'}</h3>
+                        <p className="text-sm">{isLoading ? 'Obteniendo datos de la API' : 'No hay datos para los filtros aplicados'}</p>
                     </div>
                 ) : (
                     <>
-                        <table className="historial-table">
+                        <table className="w-full border-collapse text-sm">
                             <thead>
                                 <tr>
-                                    <th>Correlativo</th>
-                                    <th>Fecha</th>
-                                    <th>Cliente</th>
-                                    <th>Sucursal</th>
-                                    <th>Tipo</th>
-                                    <th>Estado</th>
-                                    <th style={{ textAlign: 'right' }}>Total</th>
+                                    <th className={TH}>Correlativo</th>
+                                    <th className={TH}>Fecha</th>
+                                    <th className={TH}>Cliente</th>
+                                    <th className={TH}>Sucursal</th>
+                                    <th className={TH}>Tipo</th>
+                                    <th className={TH}>Estado</th>
+                                    <th className={`${TH} text-right`}>Total</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {paginated.map((doc) => (
-                                    <tr key={doc.id} onClick={() => abrirDetalle(doc)}>
-                                        <td><span className="sale-id-chip">{doc.serieCorrelativo || `DOC-${doc.id}`}</span></td>
-                                        <td>
-                                            <div className="sale-date">
-                                                <span className="day">{formatDate(doc.fecha)}</span>
-                                                <span className="time">{formatTime(doc.fecha)}</span>
+                                    <tr
+                                        key={doc.id}
+                                        className="cursor-pointer transition last:[&>td]:border-b-0 hover:bg-[#f8fafc]"
+                                        onClick={() => abrirDetalle(doc)}
+                                    >
+                                        <td className={TD}>
+                                            <span className="inline-block rounded-md bg-[#eff6ff] px-2.5 py-1 font-mono text-[13px] font-bold text-accent">
+                                                {doc.serieCorrelativo || `DOC-${doc.id}`}
+                                            </span>
+                                        </td>
+                                        <td className={TD}>
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-[13px] font-semibold text-text">{formatDate(doc.fecha)}</span>
+                                                <span className="text-[11px] text-muted">{formatTime(doc.fecha)}</span>
                                             </div>
                                         </td>
-                                        <td>{doc.cliente || '—'}</td>
-                                        <td>{doc.sucursal || '—'}</td>
-                                        <td>{doc.tipoDoc || '—'}</td>
-                                        <td>{doc.estado || '—'}</td>
-                                        <td style={{ textAlign: 'right', fontWeight: 600 }}>{Number(doc.total || 0).toFixed(2)}</td>
+                                        <td className={TD}>{doc.cliente || '—'}</td>
+                                        <td className={TD}>{doc.sucursal || '—'}</td>
+                                        <td className={TD}>{doc.tipoDoc || '—'}</td>
+                                        <td className={TD}>{doc.estado || '—'}</td>
+                                        <td className={`${TD} text-right font-semibold`}>{Number(doc.total || 0).toFixed(2)}</td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
 
-                        <div className="historial-pagination">
-                            <span className="page-info">
+                        <div className="flex items-center justify-between border-t border-border px-4 py-3.5 text-[13px] text-muted">
+                            <span className="font-medium">
                                 {(currentPage - 1) * rowsPerPage + 1}–{Math.min(currentPage * rowsPerPage, filteredDocs.length)} de {filteredDocs.length}
                             </span>
-                            <div className="page-btns">
-                                <button disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => p - 1)}>
+                            <div className="flex gap-1.5">
+                                <button
+                                    className="rounded-lg border border-border bg-surface px-3.5 py-1.5 text-[13px] font-semibold text-text transition disabled:cursor-not-allowed disabled:opacity-40 enabled:hover:border-accent enabled:hover:text-accent"
+                                    disabled={currentPage <= 1}
+                                    onClick={() => setCurrentPage((p) => p - 1)}
+                                >
                                     <FiChevronLeft />
                                 </button>
-                                <button disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => p + 1)}>
+                                <button
+                                    className="rounded-lg border border-border bg-surface px-3.5 py-1.5 text-[13px] font-semibold text-text transition disabled:cursor-not-allowed disabled:opacity-40 enabled:hover:border-accent enabled:hover:text-accent"
+                                    disabled={currentPage >= totalPages}
+                                    onClick={() => setCurrentPage((p) => p + 1)}
+                                >
                                     <FiChevronRight />
                                 </button>
                             </div>
@@ -231,24 +262,30 @@ export default function Historial() {
             </div>
 
             {selectedDoc && (
-                <div className="hist-modal-overlay" onClick={() => setSelectedDoc(null)}>
-                    <div className="hist-modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="hist-modal-header">
-                            <h2>Detalle de Documento</h2>
-                            <div className="hist-modal-actions">
+                <div
+                    className="fixed inset-0 z-[1000] flex items-center justify-center bg-[rgba(15,23,42,0.5)] backdrop-blur-[4px]"
+                    onClick={() => setSelectedDoc(null)}
+                >
+                    <div
+                        className="animate-fade-up max-h-[85vh] w-[560px] max-w-[92vw] overflow-y-auto rounded-[18px] bg-white shadow-[0_24px_60px_rgba(0,0,0,0.18)]"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between gap-3 border-b border-[#f1f5f9] px-7 pb-4 pt-6">
+                            <h2 className="font-display text-xl text-text">Detalle de Documento</h2>
+                            <div className="flex flex-shrink-0 items-center gap-2.5">
                                 <button
                                     type="button"
-                                    className="btn-hist-pdf"
+                                    className="inline-flex items-center gap-2 whitespace-nowrap rounded-[10px] border border-accent bg-white px-3.5 py-2 text-[13px] font-semibold text-accent transition enabled:hover:bg-accent enabled:hover:text-white disabled:cursor-wait disabled:opacity-65"
                                     onClick={handleDescargarPdf}
                                     disabled={pdfLoading}
                                     title="Descargar PDF"
                                 >
-                                    <FiDownload className={pdfLoading ? 'spin' : ''} />
+                                    <FiDownload className={pdfLoading ? 'animate-spin' : ''} />
                                     {pdfLoading ? 'Generando…' : 'Descargar PDF'}
                                 </button>
                                 <button
                                     type="button"
-                                    className="btn-close"
+                                    className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-border bg-surface text-lg text-muted transition hover:border-[#ef4444] hover:text-[#ef4444]"
                                     onClick={() => setSelectedDoc(null)}
                                     aria-label="Cerrar"
                                 >
@@ -256,79 +293,79 @@ export default function Historial() {
                                 </button>
                             </div>
                         </div>
-                        <div className="hist-modal-body">
-                            <div className="detail-grid">
-                                <div className="detail-item">
-                                    <span className="detail-label"><FiHash style={{ verticalAlign: 'middle' }} /> Correlativo</span>
-                                    <span className="detail-value">{selectedDoc.serieCorrelativo || `DOC-${selectedDoc.id}`}</span>
+                        <div className="px-7 pb-7 pt-5">
+                            <div className="mb-5 grid grid-cols-2 gap-4 max-md:grid-cols-1">
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-[11px] font-semibold uppercase tracking-wide text-muted"><FiHash className="inline align-middle" /> Correlativo</span>
+                                    <span className="text-sm font-semibold text-text">{selectedDoc.serieCorrelativo || `DOC-${selectedDoc.id}`}</span>
                                 </div>
-                                <div className="detail-item">
-                                    <span className="detail-label"><FiCalendar style={{ verticalAlign: 'middle' }} /> Fecha</span>
-                                    <span className="detail-value">{formatDate(selectedDoc.fecha)} — {formatTime(selectedDoc.fecha)}</span>
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-[11px] font-semibold uppercase tracking-wide text-muted"><FiCalendar className="inline align-middle" /> Fecha</span>
+                                    <span className="text-sm font-semibold text-text">{formatDate(selectedDoc.fecha)} — {formatTime(selectedDoc.fecha)}</span>
                                 </div>
-                                <div className="detail-item">
-                                    <span className="detail-label"><FiUser style={{ verticalAlign: 'middle' }} /> Cliente</span>
-                                    <span className="detail-value">{selectedDoc.cliente || '—'}</span>
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-[11px] font-semibold uppercase tracking-wide text-muted"><FiUser className="inline align-middle" /> Cliente</span>
+                                    <span className="text-sm font-semibold text-text">{selectedDoc.cliente || '—'}</span>
                                 </div>
-                                <div className="detail-item">
-                                    <span className="detail-label">Sucursal</span>
-                                    <span className="detail-value">{selectedDoc.sucursal || '—'}</span>
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">Sucursal</span>
+                                    <span className="text-sm font-semibold text-text">{selectedDoc.sucursal || '—'}</span>
                                 </div>
-                                <div className="detail-item">
-                                    <span className="detail-label">Tipo</span>
-                                    <span className="detail-value">{selectedDoc.tipoDoc || '—'}</span>
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">Tipo</span>
+                                    <span className="text-sm font-semibold text-text">{selectedDoc.tipoDoc || '—'}</span>
                                 </div>
-                                <div className="detail-item">
-                                    <span className="detail-label">Condiciones de pago</span>
-                                    <span className="detail-value">{selectedDoc.condicionesPago || '—'}</span>
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">Condiciones de pago</span>
+                                    <span className="text-sm font-semibold text-text">{selectedDoc.condicionesPago || '—'}</span>
                                 </div>
                             </div>
 
-                            <h4 style={{ fontSize: '13px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.3px', margin: '0 0 10px' }}>
+                            <h4 className="mb-2.5 text-[13px] uppercase tracking-wide text-muted">
                                 Líneas de detalle ({selectedDoc.detalles?.length || 0})
                             </h4>
-                            <div style={{ borderRadius: '10px', border: '1px solid var(--border)', overflow: 'hidden' }}>
-                                <table className="detail-items-table">
+                            <div className="overflow-hidden rounded-[10px] border border-border">
+                                <table className="mt-0 w-full border-collapse text-[13px]">
                                     <thead>
                                         <tr>
-                                            <th>Item</th>
-                                            <th>Cant.</th>
-                                            <th className="text-right">P. Unit</th>
-                                            <th className="text-right">IVA</th>
-                                            <th className="text-right">Total Línea</th>
+                                            <th className="border-b border-border bg-[#f8fafc] px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted">Item</th>
+                                            <th className="border-b border-border bg-[#f8fafc] px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted">Cant.</th>
+                                            <th className="border-b border-border bg-[#f8fafc] px-3 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-muted">P. Unit</th>
+                                            <th className="border-b border-border bg-[#f8fafc] px-3 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-muted">IVA</th>
+                                            <th className="border-b border-border bg-[#f8fafc] px-3 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-muted">Total Línea</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {(selectedDoc.detalles || []).length === 0 && (
                                             <tr>
-                                                <td colSpan={5} style={{ textAlign: 'center', color: 'var(--muted)' }}>
+                                                <td colSpan={5} className="px-3 py-2.5 text-center text-muted">
                                                     Sin líneas de detalle en la respuesta de la API.
                                                 </td>
                                             </tr>
                                         )}
                                         {(selectedDoc.detalles || []).map((d) => (
                                             <tr key={d.id}>
-                                                <td>{d.nombreItem || `Item ${d.itemId}`}</td>
-                                                <td>{Number(d.cantidad || 0)}</td>
-                                                <td className="text-right">{Number(d.precioUnitario || 0).toFixed(2)}</td>
-                                                <td className="text-right">{Number(d.ivaMonto || 0).toFixed(2)}</td>
-                                                <td className="text-right" style={{ fontWeight: 600 }}>{Number(d.totalLineas || 0).toFixed(2)}</td>
+                                                <td className="border-b border-[#f1f5f9] px-3 py-2.5 text-text">{d.nombreItem || `Item ${d.itemId}`}</td>
+                                                <td className="border-b border-[#f1f5f9] px-3 py-2.5 text-text">{Number(d.cantidad || 0)}</td>
+                                                <td className="border-b border-[#f1f5f9] px-3 py-2.5 text-right text-text">{Number(d.precioUnitario || 0).toFixed(2)}</td>
+                                                <td className="border-b border-[#f1f5f9] px-3 py-2.5 text-right text-text">{Number(d.ivaMonto || 0).toFixed(2)}</td>
+                                                <td className="border-b border-[#f1f5f9] px-3 py-2.5 text-right font-semibold text-text">{Number(d.totalLineas || 0).toFixed(2)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
 
-                            <div className="detail-totals">
-                                <div className="total-row">
+                            <div className="mt-4 rounded-xl border border-border bg-[#f8fafc] p-4">
+                                <div className="flex justify-between py-1 text-sm text-text">
                                     <span>Subtotal</span>
                                     <span>{Number(selectedDoc.subtotal || 0).toFixed(2)}</span>
                                 </div>
-                                <div className="total-row">
+                                <div className="flex justify-between py-1 text-sm text-text">
                                     <span>IVA</span>
                                     <span>{Number(selectedDoc.iva || 0).toFixed(2)}</span>
                                 </div>
-                                <div className="total-row grand">
+                                <div className="mt-2 flex justify-between border-t-2 border-dashed border-border pt-2.5 text-lg font-extrabold text-text">
                                     <span>Total</span>
                                     <span>{Number(selectedDoc.total || 0).toFixed(2)}</span>
                                 </div>

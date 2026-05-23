@@ -16,7 +16,13 @@ import {
   updateClient,
   deriveClientStatus,
 } from "../gerente/services/clientes.service";
-import "../assets/css/modulos.css";
+import {
+  MODULE_CONTAINER, MODULE_HEADER, HEADER_ACTIONS, BTN_MOD, BTN_MOD_PRIMARY,
+  STATS, STAT_CARD, STAT_ICON, STAT_ICON_BASE, STAT_VAL, STAT_LBL,
+  CONTROLS, SEARCH_BOX, SEARCH_ICON, SEARCH_INPUT, TABLE_WRAP, TABLE, EMPTY,
+  BADGE, BADGE_VARIANT, ACTIONS, ACTION_BTN, PAGINATION, PAGE_BTNS, PAGE_BTN,
+  MODAL_OVERLAY, MODAL, MODAL_HEADER, MODAL_CLOSE, MODAL_BODY, MODAL_FOOTER, FORM_ROW, FORM_GROUP,
+} from "../ui/mod";
 
 const STATUS_BADGE = {
   active: { cls: "active", label: "Al día" },
@@ -25,13 +31,7 @@ const STATUS_BADGE = {
 };
 
 const EMPTY_FORM = {
-  name: "",
-  cedula: "",
-  phone: "",
-  address: "",
-  type: "Residencial",
-  limiteCredito: "",
-  diasCredito: "",
+  name: "", cedula: "", phone: "", address: "", type: "Residencial", limiteCredito: "", diasCredito: "",
 };
 
 const ROWS_PER_PAGE = 10;
@@ -108,8 +108,7 @@ export default function ClientesEmpleado() {
     setModalOpen(true);
   };
 
-  const handleField = (key) => (e) =>
-    setForm((prev) => ({ ...prev, [key]: e.target.value }));
+  const handleField = (key) => (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }));
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -140,52 +139,43 @@ export default function ClientesEmpleado() {
   };
 
   return (
-    <div className="module-container">
-      <div className="module-header">
+    <div className={MODULE_CONTAINER}>
+      <div className={MODULE_HEADER}>
         <div className="title-section">
           <h1>Clientes</h1>
           <p>Consulta y registra clientes</p>
         </div>
-        <div className="module-header-actions">
-          <button className="btn-mod" onClick={loadData} disabled={isLoading}>
-            <FiRefreshCw className={isLoading ? "spin" : ""} /> Actualizar
+        <div className={HEADER_ACTIONS}>
+          <button className={BTN_MOD} onClick={loadData} disabled={isLoading}>
+            <FiRefreshCw className={isLoading ? "animate-spin" : ""} /> Actualizar
           </button>
-          <button className="btn-mod primary" onClick={openCreate}>
+          <button className={BTN_MOD_PRIMARY} onClick={openCreate}>
             <FiPlus /> Nuevo cliente
           </button>
         </div>
       </div>
 
-      <div className="mod-stats">
-        <div className="mod-stat-card">
-          <div className="mod-stat-icon blue"><FiUsers /></div>
-          <div className="mod-stat-info">
-            <p className="mod-val">{stats.total}</p>
-            <p className="mod-lbl">Clientes</p>
-          </div>
+      <div className={STATS}>
+        <div className={STAT_CARD}>
+          <div className={`${STAT_ICON_BASE} ${STAT_ICON.blue}`}><FiUsers /></div>
+          <div><p className={STAT_VAL}>{stats.total}</p><p className={STAT_LBL}>Clientes</p></div>
         </div>
-        <div className="mod-stat-card">
-          <div className="mod-stat-icon green"><FiUserCheck /></div>
-          <div className="mod-stat-info">
-            <p className="mod-val">{stats.alDia}</p>
-            <p className="mod-lbl">Al día</p>
-          </div>
+        <div className={STAT_CARD}>
+          <div className={`${STAT_ICON_BASE} ${STAT_ICON.green}`}><FiUserCheck /></div>
+          <div><p className={STAT_VAL}>{stats.alDia}</p><p className={STAT_LBL}>Al día</p></div>
         </div>
-        <div className="mod-stat-card">
-          <div className="mod-stat-icon amber"><FiAlertTriangle /></div>
-          <div className="mod-stat-info">
-            <p className="mod-val">{stats.conSaldo}</p>
-            <p className="mod-lbl">Con saldo</p>
-          </div>
+        <div className={STAT_CARD}>
+          <div className={`${STAT_ICON_BASE} ${STAT_ICON.amber}`}><FiAlertTriangle /></div>
+          <div><p className={STAT_VAL}>{stats.conSaldo}</p><p className={STAT_LBL}>Con saldo</p></div>
         </div>
       </div>
 
-      <div className="mod-controls">
-        <div className="search-box">
-          <FiSearch className="search-icon" />
+      <div className={CONTROLS}>
+        <div className={SEARCH_BOX}>
+          <FiSearch className={SEARCH_ICON} />
           <input
             type="text"
-            className="search-input"
+            className={SEARCH_INPUT}
             placeholder="Buscar por nombre, cédula o teléfono..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -193,16 +183,16 @@ export default function ClientesEmpleado() {
         </div>
       </div>
 
-      <div className="mod-table-wrap">
+      <div className={TABLE_WRAP}>
         {filtered.length === 0 ? (
-          <div className="mod-empty">
+          <div className={EMPTY}>
             <FiUsers />
             <h3>{isLoading ? "Cargando..." : "Sin clientes"}</h3>
             <p>{isLoading ? "Obteniendo datos de la API" : "No hay clientes para la búsqueda"}</p>
           </div>
         ) : (
           <>
-            <table className="mod-table">
+            <table className={TABLE}>
               <thead>
                 <tr>
                   <th>Cliente</th>
@@ -227,11 +217,11 @@ export default function ClientesEmpleado() {
                         ${Number(c.saldo || 0).toFixed(2)}
                       </td>
                       <td>
-                        <span className={`mod-badge ${st.cls}`}>{st.label}</span>
+                        <span className={`${BADGE} ${BADGE_VARIANT[st.cls]}`}>{st.label}</span>
                       </td>
                       <td>
-                        <div className="mod-actions" style={{ justifyContent: "flex-end" }}>
-                          <button title="Editar" onClick={() => openEdit(c)}>
+                        <div className={`${ACTIONS} justify-end`}>
+                          <button className={ACTION_BTN} title="Editar" onClick={() => openEdit(c)}>
                             <FiEdit2 />
                           </button>
                         </div>
@@ -242,16 +232,16 @@ export default function ClientesEmpleado() {
               </tbody>
             </table>
 
-            <div className="mod-pagination">
+            <div className={PAGINATION}>
               <span>
                 {(page - 1) * ROWS_PER_PAGE + 1}–
                 {Math.min(page * ROWS_PER_PAGE, filtered.length)} de {filtered.length}
               </span>
-              <div className="page-btns">
-                <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+              <div className={PAGE_BTNS}>
+                <button className={PAGE_BTN} disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
                   Anterior
                 </button>
-                <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+                <button className={PAGE_BTN} disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
                   Siguiente
                 </button>
               </div>
@@ -261,25 +251,25 @@ export default function ClientesEmpleado() {
       </div>
 
       {modalOpen && (
-        <div className="mod-modal-overlay" onClick={() => setModalOpen(false)}>
-          <div className="mod-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="mod-modal-header">
+        <div className={MODAL_OVERLAY} onClick={() => setModalOpen(false)}>
+          <div className={MODAL} onClick={(e) => e.stopPropagation()}>
+            <div className={MODAL_HEADER}>
               <h2>{editingId ? "Editar cliente" : "Nuevo cliente"}</h2>
-              <button className="btn-close" onClick={() => setModalOpen(false)} aria-label="Cerrar">
+              <button className={MODAL_CLOSE} onClick={() => setModalOpen(false)} aria-label="Cerrar">
                 <FiX />
               </button>
             </div>
-            <form className="mod-modal-body" onSubmit={handleSave}>
-              <div className="mod-form-group">
+            <form className={MODAL_BODY} onSubmit={handleSave}>
+              <div className={FORM_GROUP}>
                 <label>Nombre / Razón social *</label>
                 <input value={form.name} onChange={handleField("name")} maxLength={120} />
               </div>
-              <div className="mod-form-row">
-                <div className="mod-form-group">
+              <div className={FORM_ROW}>
+                <div className={FORM_GROUP}>
                   <label>Cédula / RIF *</label>
                   <input value={form.cedula} onChange={handleField("cedula")} maxLength={20} />
                 </div>
-                <div className="mod-form-group">
+                <div className={FORM_GROUP}>
                   <label>Tipo</label>
                   <select value={form.type} onChange={handleField("type")}>
                     <option value="Residencial">Residencial</option>
@@ -287,42 +277,31 @@ export default function ClientesEmpleado() {
                   </select>
                 </div>
               </div>
-              <div className="mod-form-row">
-                <div className="mod-form-group">
+              <div className={FORM_ROW}>
+                <div className={FORM_GROUP}>
                   <label>Teléfono</label>
                   <input value={form.phone} onChange={handleField("phone")} maxLength={20} />
                 </div>
-                <div className="mod-form-group">
+                <div className={FORM_GROUP}>
                   <label>Dirección</label>
                   <input value={form.address} onChange={handleField("address")} maxLength={150} />
                 </div>
               </div>
-              <div className="mod-form-row">
-                <div className="mod-form-group">
+              <div className={FORM_ROW}>
+                <div className={FORM_GROUP}>
                   <label>Límite de crédito ($)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={form.limiteCredito}
-                    onChange={handleField("limiteCredito")}
-                  />
+                  <input type="number" min="0" step="0.01" value={form.limiteCredito} onChange={handleField("limiteCredito")} />
                 </div>
-                <div className="mod-form-group">
+                <div className={FORM_GROUP}>
                   <label>Días de crédito</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={form.diasCredito}
-                    onChange={handleField("diasCredito")}
-                  />
+                  <input type="number" min="0" value={form.diasCredito} onChange={handleField("diasCredito")} />
                 </div>
               </div>
-              <div className="mod-modal-footer">
-                <button type="button" className="btn-mod" onClick={() => setModalOpen(false)}>
+              <div className={MODAL_FOOTER}>
+                <button type="button" className={BTN_MOD} onClick={() => setModalOpen(false)}>
                   Cancelar
                 </button>
-                <button type="submit" className="btn-mod primary" disabled={saving}>
+                <button type="submit" className={BTN_MOD_PRIMARY} disabled={saving}>
                   {saving ? "Guardando..." : editingId ? "Guardar cambios" : "Crear cliente"}
                 </button>
               </div>

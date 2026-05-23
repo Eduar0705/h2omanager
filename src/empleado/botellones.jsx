@@ -9,7 +9,12 @@ import {
 import Swal from "sweetalert2";
 import { useAuth } from "../auth/AuthContext";
 import { getInventory } from "../gerente/services/botellones.service";
-import "../assets/css/modulos.css";
+import {
+  MODULE_CONTAINER, MODULE_HEADER, HEADER_ACTIONS, BTN_MOD,
+  STATS, STAT_CARD, STAT_ICON, STAT_ICON_BASE, STAT_VAL, STAT_LBL,
+  CONTROLS, SEARCH_BOX, SEARCH_ICON, SEARCH_INPUT, FILTER_SELECT,
+  TABLE_WRAP, TABLE, EMPTY, BADGE, BADGE_VARIANT,
+} from "../ui/mod";
 
 const DEFAULT_SUCURSAL_ID = Number(import.meta.env.VITE_DEFAULT_SUCURSAL_ID || 1);
 
@@ -66,70 +71,61 @@ export default function BotellonesEmpleado() {
   }, [items]);
 
   return (
-    <div className="module-container">
-      <div className="module-header">
+    <div className={MODULE_CONTAINER}>
+      <div className={MODULE_HEADER}>
         <div className="title-section">
           <h1>Inventario</h1>
           <p>Consulta de existencias · Sucursal {sucursalId}</p>
         </div>
-        <div className="module-header-actions">
-          <button className="btn-mod" onClick={loadData} disabled={isLoading}>
-            <FiRefreshCw className={isLoading ? "spin" : ""} /> Actualizar
+        <div className={HEADER_ACTIONS}>
+          <button className={BTN_MOD} onClick={loadData} disabled={isLoading}>
+            <FiRefreshCw className={isLoading ? "animate-spin" : ""} /> Actualizar
           </button>
         </div>
       </div>
 
-      <div className="mod-stats">
-        <div className="mod-stat-card">
-          <div className="mod-stat-icon blue"><FiPackage /></div>
-          <div className="mod-stat-info">
-            <p className="mod-val">{stats.total}</p>
-            <p className="mod-lbl">Ítems</p>
-          </div>
+      <div className={STATS}>
+        <div className={STAT_CARD}>
+          <div className={`${STAT_ICON_BASE} ${STAT_ICON.blue}`}><FiPackage /></div>
+          <div><p className={STAT_VAL}>{stats.total}</p><p className={STAT_LBL}>Ítems</p></div>
         </div>
-        <div className="mod-stat-card">
-          <div className="mod-stat-icon green"><FiCheckCircle /></div>
-          <div className="mod-stat-info">
-            <p className="mod-val">{stats.unidades}</p>
-            <p className="mod-lbl">Unidades en stock</p>
-          </div>
+        <div className={STAT_CARD}>
+          <div className={`${STAT_ICON_BASE} ${STAT_ICON.green}`}><FiCheckCircle /></div>
+          <div><p className={STAT_VAL}>{stats.unidades}</p><p className={STAT_LBL}>Unidades en stock</p></div>
         </div>
-        <div className="mod-stat-card">
-          <div className="mod-stat-icon red"><FiAlertTriangle /></div>
-          <div className="mod-stat-info">
-            <p className="mod-val">{stats.bajos}</p>
-            <p className="mod-lbl">Stock bajo</p>
-          </div>
+        <div className={STAT_CARD}>
+          <div className={`${STAT_ICON_BASE} ${STAT_ICON.red}`}><FiAlertTriangle /></div>
+          <div><p className={STAT_VAL}>{stats.bajos}</p><p className={STAT_LBL}>Stock bajo</p></div>
         </div>
       </div>
 
-      <div className="mod-controls">
-        <div className="search-box">
-          <FiSearch className="search-icon" />
+      <div className={CONTROLS}>
+        <div className={SEARCH_BOX}>
+          <FiSearch className={SEARCH_ICON} />
           <input
             type="text"
-            className="search-input"
+            className={SEARCH_INPUT}
             placeholder="Buscar por nombre o SKU..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <select className="filter-select" value={tipo} onChange={(e) => setTipo(e.target.value)}>
+        <select className={FILTER_SELECT} value={tipo} onChange={(e) => setTipo(e.target.value)}>
           {TIPOS.map((t) => (
             <option key={t.value} value={t.value}>{t.label}</option>
           ))}
         </select>
       </div>
 
-      <div className="mod-table-wrap">
+      <div className={TABLE_WRAP}>
         {filtered.length === 0 ? (
-          <div className="mod-empty">
+          <div className={EMPTY}>
             <FiPackage />
             <h3>{isLoading ? "Cargando..." : "Sin ítems"}</h3>
             <p>{isLoading ? "Obteniendo datos de la API" : "No hay ítems para los filtros aplicados"}</p>
           </div>
         ) : (
-          <table className="mod-table">
+          <table className={TABLE}>
             <thead>
               <tr>
                 <th>Ítem</th>
@@ -156,11 +152,11 @@ export default function BotellonesEmpleado() {
                   <td style={{ textAlign: "right" }}>${Number(it.price || 0).toFixed(2)}</td>
                   <td>
                     {!it.controlaStock ? (
-                      <span className="mod-badge inactive">No aplica</span>
+                      <span className={`${BADGE} ${BADGE_VARIANT.inactive}`}>No aplica</span>
                     ) : it.stockBajo ? (
-                      <span className="mod-badge cancelada">Stock bajo</span>
+                      <span className={`${BADGE} ${BADGE_VARIANT.cancelada}`}>Stock bajo</span>
                     ) : (
-                      <span className="mod-badge active">Disponible</span>
+                      <span className={`${BADGE} ${BADGE_VARIANT.active}`}>Disponible</span>
                     )}
                   </td>
                 </tr>

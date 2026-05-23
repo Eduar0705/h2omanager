@@ -1,0 +1,143 @@
+/* ── Tipografías ─────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap');
+
+/* ── Tailwind v4 (sin Preflight para no afectar páginas aún no migradas) ── */
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+/* ── Tokens del sistema de diseño → utilidades Tailwind ──
+   Genera bg-bg, bg-surface, text-accent, text-muted, border-border,
+   font-display, font-body, shadow-brand, etc. */
+@theme {
+  --color-bg: #f0f5fb;
+  --color-bg2: #e4edf8;
+  --color-surface: #ffffff;
+  --color-accent: #0077cc;
+  --color-accent-hover: #0066b3;
+  --color-accent2: #00b899;
+  --color-text: #0d1f33;
+  --color-muted: #6b85a3;
+  --color-border: #d0dcea;
+  --color-danger: #e03e3e;
+
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+
+  --shadow-brand: 0 2px 12px rgba(0, 90, 180, 0.1);
+  --shadow-brand-lg: 0 12px 32px rgba(0, 90, 180, 0.16);
+
+  --animate-fade-up: fadeUp 0.7s ease both;
+  --animate-fade-down: fadeDown 0.6s ease both;
+  --animate-drift: drift 14s ease-in-out infinite alternate;
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(22px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes drift {
+    from { transform: translate(0, 0) scale(1); }
+    to { transform: translate(28px, 18px) scale(1.06); }
+  }
+}
+
+/* ── Variables legacy + reset global ──
+   Va en @layer base para que las utilidades de Tailwind (capa posterior)
+   puedan sobrescribir el reset; las páginas sin migrar usan var(--accent)… */
+@layer base {
+  :root {
+    --bg: #f0f5fb;
+    --bg2: #e4edf8;
+    --surface: #ffffff;
+    --accent: #0077cc;
+    --accent2: #00b899;
+    --text: #0d1f33;
+    --muted: #6b85a3;
+    --border: #d0dcea;
+    --shadow: rgba(0, 90, 180, 0.1);
+    --danger: #e03e3e;
+    --sidebar-w-open: 230px;
+    --sidebar-w-closed: 64px;
+    --transition: 0.22s ease;
+    --font-display: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html,
+  body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  #root {
+    min-height: 100%;
+  }
+}
+
+/* ── SweetAlert2 (estilo de marca, usado en toda la app) ── */
+.swal-popup {
+  border-radius: 18px;
+  font-family: var(--font-body);
+  padding: 28px 24px 24px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+}
+
+.swal-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.4px;
+}
+
+.swal-text {
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.swal-confirm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #ffffff;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 12px 34px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(0, 119, 204, 0.28);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.swal-confirm-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0, 119, 204, 0.32);
+  filter: brightness(1.05);
+}
+
+.swal-confirm-btn:active { transform: scale(0.98); }
+
+.swal-confirm-btn:focus,
+.swal-confirm-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(0, 119, 204, 0.18);
+}

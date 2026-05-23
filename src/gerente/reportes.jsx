@@ -17,11 +17,27 @@ import * as botellonService from './services/botellones.service';
 import * as reportesApi from './services/reportes.service';
 import * as configService from './services/config.service';
 import { descargarInformeGerencialPdf } from './utils/informe-gerencial-pdf';
-import '../assets/css/reportes.css';
 
 const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 const DONUT_COLORS = ['#3b82f6', '#f59e0b', '#6366f1', '#22c55e', '#ef4444', '#06b6d4'];
 const DEFAULT_SUCURSAL_ID = Number(import.meta.env.VITE_DEFAULT_SUCURSAL_ID || 1);
+
+const BTN_REP = 'flex items-center gap-2 rounded-[10px] border border-border bg-white px-5 py-2.5 text-[13px] font-semibold text-text transition hover:-translate-y-0.5 hover:border-accent hover:text-accent hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] disabled:opacity-60 max-md:flex-1 max-md:justify-center';
+const BTN_REP_PRIMARY = 'flex items-center gap-2 rounded-[10px] border border-accent bg-accent px-5 py-2.5 text-[13px] font-semibold text-white shadow-[0_4px_14px_rgba(0,119,204,0.25)] transition hover:bg-[#0066b3] disabled:opacity-60';
+const CARD = 'mb-5 rounded-2xl border border-border bg-white p-6 transition hover:shadow-[0_4px_20px_rgba(0,0,0,0.04)]';
+const SECTION_TITLE = 'mb-4 mt-8 flex items-center border-b-2 border-border pb-2 font-display text-xl text-text';
+const STAT_ICON = {
+    blue: 'bg-[#eff6ff] text-[#3b82f6]',
+    cyan: 'bg-[#ecfeff] text-[#06b6d4]',
+    orange: 'bg-[#fff7ed] text-[#f97316]',
+    green: 'bg-[#f0fdf4] text-[#22c55e]',
+};
+const FORM_LABEL = 'flex flex-col gap-1.5 text-xs font-semibold text-muted';
+const FORM_INPUT = 'rounded-lg border border-border px-3 py-2.5 text-sm outline-none focus:border-accent';
+const TABLE_WRAP = 'max-h-[420px] overflow-x-auto rounded-[10px] border border-border';
+const DATA_TABLE = 'w-full border-collapse text-[13px]';
+const DT_TH = 'sticky top-0 border-b border-[#f1f5f9] bg-[#f8fafc] px-3 py-2.5 text-left font-semibold';
+const DT_TD = 'border-b border-[#f1f5f9] px-3 py-2.5 text-left';
 
 function hoyIso() {
     return new Date().toISOString().slice(0, 10);
@@ -219,20 +235,9 @@ export default function Reportes() {
     const CustomTooltip = ({ active, payload, label }) => {
         if (active && payload?.length) {
             return (
-                <div
-                    style={{
-                        background: '#fff',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '10px',
-                        padding: '10px 14px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                        fontSize: '13px',
-                    }}
-                >
-                    <p style={{ margin: 0, fontWeight: 700, color: 'var(--text)' }}>{label}</p>
-                    <p style={{ margin: '4px 0 0', color: 'var(--accent)', fontWeight: 600 }}>
-                        ${payload[0].value.toFixed(2)}
-                    </p>
+                <div className="rounded-[10px] border border-[#e2e8f0] bg-white px-3.5 py-2.5 text-[13px] shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+                    <p className="m-0 font-bold text-text">{label}</p>
+                    <p className="mt-1 font-semibold text-accent">${payload[0].value.toFixed(2)}</p>
                 </div>
             );
         }
@@ -242,9 +247,9 @@ export default function Reportes() {
     const renderTotalesInforme = () => {
         if (!informe?.totales) return null;
         return (
-            <div className="rep-preview-totales">
+            <div className="mb-3.5 flex flex-wrap gap-4 text-[13px]">
                 {Object.entries(informe.totales).map(([k, v]) => (
-                    <span key={k}>
+                    <span key={k} className="rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-3 py-2">
                         <strong>{k.replace(/([A-Z])/g, ' $1').trim()}:</strong>{' '}
                         {typeof v === 'number' && (k.includes('total') || k.includes('saldo') || k.includes('valor') || k.includes('Usd'))
                             ? `$${Number(v).toFixed(2)}`
@@ -258,30 +263,30 @@ export default function Reportes() {
     const renderTablaInforme = () => {
         if (informe?.tipo === 'estado_resultados' && (informe.ingresos || informe.egresos)) {
             const tablaCuentas = (titulo, filas) => (
-                <div key={titulo} className="rep-contable-seccion">
-                    <h4>{titulo}</h4>
-                    <div className="rep-table-wrap">
-                        <table className="rep-data-table">
+                <div key={titulo} className="mb-4">
+                    <h4 className="mb-2 text-[15px]">{titulo}</h4>
+                    <div className={TABLE_WRAP}>
+                        <table className={DATA_TABLE}>
                             <thead>
                                 <tr>
-                                    <th>Código</th>
-                                    <th>Cuenta</th>
-                                    <th className="text-right">Monto</th>
+                                    <th className={DT_TH}>Código</th>
+                                    <th className={DT_TH}>Cuenta</th>
+                                    <th className={`${DT_TH} text-right`}>Monto</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {(filas || []).length === 0 && (
                                     <tr>
-                                        <td colSpan={3} style={{ textAlign: 'center', color: 'var(--muted)' }}>
+                                        <td colSpan={3} className={`${DT_TD} text-center text-muted`}>
                                             Sin movimientos
                                         </td>
                                     </tr>
                                 )}
                                 {(filas || []).map((c, i) => (
                                     <tr key={c.cuentaId ?? i}>
-                                        <td>{c.codigo}</td>
-                                        <td>{c.nombre}</td>
-                                        <td className="text-right">${Number(c.saldo ?? 0).toFixed(2)}</td>
+                                        <td className={DT_TD}>{c.codigo}</td>
+                                        <td className={DT_TD}>{c.nombre}</td>
+                                        <td className={`${DT_TD} text-right`}>${Number(c.saldo ?? 0).toFixed(2)}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -292,7 +297,7 @@ export default function Reportes() {
             return (
                 <>
                     {informe.nota && (
-                        <p className="mod-form-hint" style={{ marginBottom: 12 }}>{informe.nota}</p>
+                        <p className="mb-3 mt-1 text-xs text-[#94a3b8]">{informe.nota}</p>
                     )}
                     {tablaCuentas('Ingresos', informe.ingresos)}
                     {tablaCuentas('Egresos', informe.egresos)}
@@ -302,26 +307,26 @@ export default function Reportes() {
 
         if (informe?.secciones?.length) {
             return informe.secciones.map((sec, idx) => (
-                <div key={idx} className="rep-contable-seccion">
-                    <h4>
+                <div key={idx} className="mb-4">
+                    <h4 className="mb-2 text-[15px]">
                         {sec.titulo || sec.tipo} — Subtotal: $
                         {Number(sec.subtotal ?? 0).toFixed(2)}
                     </h4>
-                    <div className="rep-table-wrap">
-                        <table className="rep-data-table">
+                    <div className={TABLE_WRAP}>
+                        <table className={DATA_TABLE}>
                             <thead>
                                 <tr>
-                                    <th>Código</th>
-                                    <th>Cuenta</th>
-                                    <th>Saldo</th>
+                                    <th className={DT_TH}>Código</th>
+                                    <th className={DT_TH}>Cuenta</th>
+                                    <th className={DT_TH}>Saldo</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {(sec.cuentas || []).map((c, i) => (
                                     <tr key={i}>
-                                        <td>{c.codigo}</td>
-                                        <td>{c.nombre}</td>
-                                        <td>${Number(c.saldo ?? 0).toFixed(2)}</td>
+                                        <td className={DT_TD}>{c.codigo}</td>
+                                        <td className={DT_TD}>{c.nombre}</td>
+                                        <td className={DT_TD}>${Number(c.saldo ?? 0).toFixed(2)}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -333,7 +338,7 @@ export default function Reportes() {
 
         if (!informe?.filas?.length) {
             return (
-                <p style={{ color: 'var(--muted)', fontSize: 14 }}>
+                <p className="text-sm text-muted">
                     Sin registros para los filtros seleccionados.
                 </p>
             );
@@ -344,12 +349,12 @@ export default function Reportes() {
             : Object.keys(informe.filas[0]);
 
         return (
-            <div className="rep-table-wrap">
-                <table className="rep-data-table">
+            <div className={TABLE_WRAP}>
+                <table className={DATA_TABLE}>
                     <thead>
                         <tr>
                             {cols.map((c) => (
-                                <th key={c}>{reportesApi.labelColumna(c)}</th>
+                                <th key={c} className={DT_TH}>{reportesApi.labelColumna(c)}</th>
                             ))}
                         </tr>
                     </thead>
@@ -357,7 +362,7 @@ export default function Reportes() {
                         {informe.filas.map((fila, i) => (
                             <tr key={i}>
                                 {cols.map((c) => (
-                                    <td key={c}>{formatCelda(c, fila[c])}</td>
+                                    <td key={c} className={DT_TD}>{formatCelda(c, fila[c])}</td>
                                 ))}
                             </tr>
                         ))}
@@ -368,87 +373,87 @@ export default function Reportes() {
     };
 
     return (
-        <div className="reportes-container">
-            <div className="reportes-header">
-                <div className="title-section">
-                    <h1>Reportes y Analítica</h1>
-                    <p>Resumen del negocio e informes gerenciales exportables</p>
+        <div className="animate-fade-up p-2.5">
+            <div className="mb-7 flex items-start justify-between max-md:flex-col max-md:gap-4">
+                <div>
+                    <h1 className="font-display text-[28px] text-text">Reportes y Analítica</h1>
+                    <p className="mt-1 text-sm text-muted">Resumen del negocio e informes gerenciales exportables</p>
                 </div>
-                <div className="rep-header-actions">
-                    <button className="btn-rep" onClick={loadData} disabled={isLoading}>
-                        <FiRefreshCw className={isLoading ? 'spin' : ''} />
+                <div className="flex gap-2.5 max-md:w-full">
+                    <button className={BTN_REP} onClick={loadData} disabled={isLoading}>
+                        <FiRefreshCw className={isLoading ? 'animate-spin' : ''} />
                     </button>
-                    <button className="btn-rep" onClick={exportVentasCsv}>
+                    <button className={BTN_REP} onClick={exportVentasCsv}>
                         <FiDownload /> Resumen ventas CSV
                     </button>
                 </div>
             </div>
 
-            <h2 className="rep-section-title">
-                <FiBarChart2 style={{ verticalAlign: 'middle', marginRight: 8 }} />
+            <h2 className={SECTION_TITLE}>
+                <FiBarChart2 className="mr-2 align-middle" />
                 Resumen analítico
             </h2>
 
-            <div className="rep-stats">
-                <div className="rep-stat-card">
-                    <div className="rep-stat-left">
-                        <p className="rep-stat-label">Ventas registradas</p>
-                        <p className="rep-stat-value">
+            <div className="mb-7 grid grid-cols-4 gap-4 max-[1024px]:grid-cols-2 max-[480px]:grid-cols-1">
+                <div className="flex items-start justify-between rounded-2xl border border-border bg-white px-6 py-[22px] transition hover:-translate-y-[3px] hover:shadow-[0_8px_28px_rgba(0,0,0,0.06)]">
+                    <div>
+                        <p className="mb-2 text-[13px] font-medium text-muted">Ventas registradas</p>
+                        <p className="mb-2 font-display text-3xl font-extrabold leading-none text-text">
                             ${totalUSD.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                         </p>
-                        <div className="rep-stat-trend up">
+                        <div className="flex items-center gap-1 text-xs font-semibold text-[#22c55e]">
                             <FiTrendingUp size={14} /> {sales.length} documentos
                         </div>
                     </div>
-                    <div className="rep-stat-icon blue">
+                    <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl text-xl ${STAT_ICON.blue}`}>
                         <FiDollarSign />
                     </div>
                 </div>
 
-                <div className="rep-stat-card">
-                    <div className="rep-stat-left">
-                        <p className="rep-stat-label">Salidas de inventario</p>
-                        <p className="rep-stat-value">{totalBottlesDelivered.toLocaleString()}</p>
-                        <div className="rep-stat-trend up">
+                <div className="flex items-start justify-between rounded-2xl border border-border bg-white px-6 py-[22px] transition hover:-translate-y-[3px] hover:shadow-[0_8px_28px_rgba(0,0,0,0.06)]">
+                    <div>
+                        <p className="mb-2 text-[13px] font-medium text-muted">Salidas de inventario</p>
+                        <p className="mb-2 font-display text-3xl font-extrabold leading-none text-text">{totalBottlesDelivered.toLocaleString()}</p>
+                        <div className="flex items-center gap-1 text-xs font-semibold text-[#22c55e]">
                             <FiTrendingUp size={14} /> unidades (histórico)
                         </div>
                     </div>
-                    <div className="rep-stat-icon cyan">
+                    <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl text-xl ${STAT_ICON.cyan}`}>
                         <TbBottle />
                     </div>
                 </div>
 
-                <div className="rep-stat-card">
-                    <div className="rep-stat-left">
-                        <p className="rep-stat-label">Clientes en cartera</p>
-                        <p className="rep-stat-value">{clients.length}</p>
-                        <div className="rep-stat-trend down">
+                <div className="flex items-start justify-between rounded-2xl border border-border bg-white px-6 py-[22px] transition hover:-translate-y-[3px] hover:shadow-[0_8px_28px_rgba(0,0,0,0.06)]">
+                    <div>
+                        <p className="mb-2 text-[13px] font-medium text-muted">Clientes en cartera</p>
+                        <p className="mb-2 font-display text-3xl font-extrabold leading-none text-text">{clients.length}</p>
+                        <div className="flex items-center gap-1 text-xs font-semibold text-[#ef4444]">
                             {morosos} con saldo pendiente
                         </div>
                     </div>
-                    <div className="rep-stat-icon orange">
+                    <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl text-xl ${STAT_ICON.orange}`}>
                         <FiUsers />
                     </div>
                 </div>
 
-                <div className="rep-stat-card">
-                    <div className="rep-stat-left">
-                        <p className="rep-stat-label">Ventas a crédito</p>
-                        <p className="rep-stat-value">{ventasCredito}</p>
-                        <div className="rep-stat-trend up">
+                <div className="flex items-start justify-between rounded-2xl border border-border bg-white px-6 py-[22px] transition hover:-translate-y-[3px] hover:shadow-[0_8px_28px_rgba(0,0,0,0.06)]">
+                    <div>
+                        <p className="mb-2 text-[13px] font-medium text-muted">Ventas a crédito</p>
+                        <p className="mb-2 font-display text-3xl font-extrabold leading-none text-text">{ventasCredito}</p>
+                        <div className="flex items-center gap-1 text-xs font-semibold text-[#22c55e]">
                             <FiTruck size={14} /> del total de ventas
                         </div>
                     </div>
-                    <div className="rep-stat-icon green">
+                    <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl text-xl ${STAT_ICON.green}`}>
                         <FiTruck />
                     </div>
                 </div>
             </div>
 
-            <div className="rep-chart-card">
-                <div className="rep-chart-header">
-                    <h3>Ventas mensuales (USD)</h3>
-                    <span className="rep-period-btn">Datos del sistema</span>
+            <div className={CARD}>
+                <div className="mb-5 flex items-center justify-between">
+                    <h3 className="font-display text-lg text-text">Ventas mensuales (USD)</h3>
+                    <span className="cursor-pointer rounded-lg border border-border bg-white px-4 py-1.5 text-[13px] font-medium text-text transition hover:border-accent">Datos del sistema</span>
                 </div>
                 <ResponsiveContainer width="100%" height={320}>
                     <LineChart data={monthlySales} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
@@ -468,10 +473,10 @@ export default function Reportes() {
                 </ResponsiveContainer>
             </div>
 
-            <div className="rep-bottom-grid">
-                <div className="rep-chart-card">
-                    <div className="rep-chart-header">
-                        <h3>Top clientes (unidades vendidas)</h3>
+            <div className="mb-5 grid grid-cols-2 gap-5 max-[1024px]:grid-cols-1">
+                <div className={CARD.replace('mb-5 ', '')}>
+                    <div className="mb-5 flex items-center justify-between">
+                        <h3 className="font-display text-lg text-text">Top clientes (unidades vendidas)</h3>
                     </div>
                     {topClients.length > 0 ? (
                         <ResponsiveContainer width="100%" height={260}>
@@ -480,66 +485,44 @@ export default function Reportes() {
                                 <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={{ stroke: '#e2e8f0' }} tickLine={false} />
                                 <YAxis tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                                 <Tooltip
-                                    contentStyle={{
-                                        background: '#fff',
-                                        border: '1px solid #e2e8f0',
-                                        borderRadius: '10px',
-                                        fontSize: '13px',
-                                    }}
+                                    contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '13px' }}
                                     formatter={(v) => [`${v} unidades`, 'Cantidad']}
                                 />
                                 <Bar dataKey="botellones" radius={[6, 6, 0, 0]} maxBarSize={40} fill="#3b82f6" />
                             </BarChart>
                         </ResponsiveContainer>
                     ) : (
-                        <div style={{ height: 260, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', fontSize: '14px' }}>
+                        <div className="flex h-[260px] items-center justify-center text-sm text-muted">
                             Sin datos de clientes aún
                         </div>
                     )}
                 </div>
 
-                <div className="rep-chart-card">
-                    <div className="rep-chart-header">
-                        <h3>Formas de pago</h3>
+                <div className={CARD.replace('mb-5 ', '')}>
+                    <div className="mb-5 flex items-center justify-between">
+                        <h3 className="font-display text-lg text-text">Formas de pago</h3>
                     </div>
                     {serviceTypes.length > 0 ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                        <div className="flex items-center gap-5">
                             <ResponsiveContainer width="50%" height={220}>
                                 <PieChart>
-                                    <Pie
-                                        data={serviceTypes}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={55}
-                                        outerRadius={85}
-                                        paddingAngle={3}
-                                        dataKey="value"
-                                        stroke="none"
-                                    >
+                                    <Pie data={serviceTypes} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={3} dataKey="value" stroke="none">
                                         {serviceTypes.map((_, i) => (
                                             <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />
                                         ))}
                                     </Pie>
                                     <Tooltip
-                                        contentStyle={{
-                                            background: '#fff',
-                                            border: '1px solid #e2e8f0',
-                                            borderRadius: '10px',
-                                            fontSize: '13px',
-                                        }}
+                                        contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '13px' }}
                                         formatter={(v) => [`${v} ventas`, 'Cantidad']}
                                     />
                                 </PieChart>
                             </ResponsiveContainer>
-                            <div className="donut-legend" style={{ flex: 1 }}>
+                            <div className="mt-3.5 flex flex-1 flex-col gap-2.5">
                                 {serviceTypes.map((s, i) => (
-                                    <div key={s.name} className="donut-legend-item">
-                                        <div
-                                            className="donut-legend-dot"
-                                            style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }}
-                                        />
-                                        <span className="donut-legend-label">{s.name}</span>
-                                        <span className="donut-legend-val">
+                                    <div key={s.name} className="flex items-center gap-2.5 text-[13px]">
+                                        <div className="h-3 w-3 flex-shrink-0 rounded-[3px]" style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }} />
+                                        <span className="flex-1 font-medium text-text">{s.name}</span>
+                                        <span className="font-semibold text-muted">
                                             {donutTotal > 0 ? Math.round((s.value / donutTotal) * 100) : 0}%
                                         </span>
                                     </div>
@@ -547,76 +530,62 @@ export default function Reportes() {
                             </div>
                         </div>
                     ) : (
-                        <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', fontSize: '14px' }}>
+                        <div className="flex h-[220px] items-center justify-center text-sm text-muted">
                             Sin datos de ventas aún
                         </div>
                     )}
                 </div>
             </div>
 
-            <h2 className="rep-section-title">
-                <FiFileText style={{ verticalAlign: 'middle', marginRight: 8 }} />
+            <h2 className={SECTION_TITLE}>
+                <FiFileText className="mr-2 align-middle" />
                 Informes gerenciales
             </h2>
 
-            <div className="rep-gerencial-panel" id="informe-gerencial-print">
-                <p style={{ margin: '0 0 14px', color: 'var(--muted)', fontSize: 14 }}>
+            <div className="mb-6 rounded-[14px] border border-border bg-white p-5" id="informe-gerencial-print">
+                <p className="mb-3.5 text-sm text-muted">
                     Genere informes detallados por período o posición contable. Exporte a CSV o descargue un PDF gerencial con el mismo formato que las facturas.
                 </p>
 
-                <div className="rep-gerencial-form">
-                    <label>
+                <div className="mb-4 grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] items-end gap-3.5">
+                    <label className={FORM_LABEL}>
                         Tipo de informe
-                        <select value={tipoInforme} onChange={(e) => setTipoInforme(e.target.value)}>
+                        <select className={FORM_INPUT} value={tipoInforme} onChange={(e) => setTipoInforme(e.target.value)}>
                             {reportesApi.TIPOS_INFORME.map((t) => (
-                                <option key={t.id} value={t.id}>
-                                    {t.label}
-                                </option>
+                                <option key={t.id} value={t.id}>{t.label}</option>
                             ))}
                         </select>
                     </label>
                     {tipoConfig?.requiereFechas && (
                         <>
-                            <label>
+                            <label className={FORM_LABEL}>
                                 Desde
-                                <input
-                                    type="date"
-                                    value={fechaDesde}
-                                    onChange={(e) => setFechaDesde(e.target.value)}
-                                />
+                                <input className={FORM_INPUT} type="date" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} />
                             </label>
-                            <label>
+                            <label className={FORM_LABEL}>
                                 Hasta
-                                <input
-                                    type="date"
-                                    value={fechaHasta}
-                                    onChange={(e) => setFechaHasta(e.target.value)}
-                                />
+                                <input className={FORM_INPUT} type="date" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} />
                             </label>
                         </>
                     )}
-                    <label>
+                    <label className={FORM_LABEL}>
                         Sucursal
-                        <input type="number" value={sucursalId} readOnly />
+                        <input className={FORM_INPUT} type="number" value={sucursalId} readOnly />
                     </label>
                 </div>
 
-                <div className="rep-gerencial-actions">
-                    <button className="btn-rep primary" onClick={generarInforme} disabled={generando}>
-                        <FiSearch className={generando ? 'spin' : ''} />
+                <div className="flex flex-wrap gap-2.5">
+                    <button className={BTN_REP_PRIMARY} onClick={generarInforme} disabled={generando}>
+                        <FiSearch className={generando ? 'animate-spin' : ''} />
                         {generando ? 'Generando…' : 'Generar informe'}
                     </button>
                     {informe && (
                         <>
-                            <button className="btn-rep" onClick={exportInformeCsv}>
+                            <button className={BTN_REP} onClick={exportInformeCsv}>
                                 <FiDownload /> Exportar CSV
                             </button>
-                            <button
-                                className="btn-rep primary"
-                                onClick={descargarInformePdf}
-                                disabled={pdfInformeLoading}
-                            >
-                                <FiFileText className={pdfInformeLoading ? 'spin' : ''} />
+                            <button className={BTN_REP_PRIMARY} onClick={descargarInformePdf} disabled={pdfInformeLoading}>
+                                <FiFileText className={pdfInformeLoading ? 'animate-spin' : ''} />
                                 {pdfInformeLoading ? 'Generando PDF…' : 'Descargar PDF'}
                             </button>
                         </>
@@ -624,10 +593,10 @@ export default function Reportes() {
                 </div>
 
                 {informe && (
-                    <div className="rep-preview">
-                        <h3 style={{ margin: '0 0 12px' }}>{informe.titulo}</h3>
+                    <div className="mt-5 border-t border-border pt-4">
+                        <h3 className="mb-3 font-display text-lg text-text">{informe.titulo}</h3>
                         {informe.periodo && (
-                            <p style={{ fontSize: 13, color: 'var(--muted)', margin: '0 0 12px' }}>
+                            <p className="mb-3 text-[13px] text-muted">
                                 Período: {informe.periodo.desde || '—'} al {informe.periodo.hasta || '—'}
                             </p>
                         )}
@@ -635,26 +604,26 @@ export default function Reportes() {
                         {renderTablaInforme()}
                         {informe.tipo === 'clientes_cxc' && informe.cxcDocumentos?.length > 0 && (
                             <>
-                                <h4 style={{ marginTop: 20 }}>Documentos CXC pendientes</h4>
-                                <div className="rep-table-wrap">
-                                    <table className="rep-data-table">
+                                <h4 className="mt-5 text-[15px]">Documentos CXC pendientes</h4>
+                                <div className={TABLE_WRAP}>
+                                    <table className={DATA_TABLE}>
                                         <thead>
                                             <tr>
-                                                <th>Cliente</th>
-                                                <th>Documento</th>
-                                                <th>Vencimiento</th>
-                                                <th>Saldo</th>
-                                                <th>Estado</th>
+                                                <th className={DT_TH}>Cliente</th>
+                                                <th className={DT_TH}>Documento</th>
+                                                <th className={DT_TH}>Vencimiento</th>
+                                                <th className={DT_TH}>Saldo</th>
+                                                <th className={DT_TH}>Estado</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {informe.cxcDocumentos.map((cx, i) => (
                                                 <tr key={i}>
-                                                    <td>{cx.cliente}</td>
-                                                    <td>{cx.serieCorrelativo || '—'}</td>
-                                                    <td>{cx.vencimiento}</td>
-                                                    <td>${Number(cx.saldo).toFixed(2)}</td>
-                                                    <td>{cx.estado}</td>
+                                                    <td className={DT_TD}>{cx.cliente}</td>
+                                                    <td className={DT_TD}>{cx.serieCorrelativo || '—'}</td>
+                                                    <td className={DT_TD}>{cx.vencimiento}</td>
+                                                    <td className={DT_TD}>${Number(cx.saldo).toFixed(2)}</td>
+                                                    <td className={DT_TD}>{cx.estado}</td>
                                                 </tr>
                                             ))}
                                         </tbody>

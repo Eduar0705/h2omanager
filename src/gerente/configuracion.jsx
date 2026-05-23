@@ -4,7 +4,6 @@ import {
     FiDollarSign,
     FiSave,
     FiRefreshCw,
-    FiPercent,
     FiEye,
     FiEyeOff,
     FiCheckCircle,
@@ -13,8 +12,7 @@ import {
 } from 'react-icons/fi';
 import Swal from 'sweetalert2';
 import * as configService from './services/config.service';
-import '../assets/css/configuracion.css';
-import '../assets/css/modulos.css';
+import { PANEL_FORM, PREVIEW_BOX, INPUT_ICON, BTN_SHOW_PASS, FORM_GROUP, FORM_ROW, FORM_HINT, MODAL_FOOTER, BTN_MOD_PRIMARY } from '../ui/mod';
 
 const CONFIG_MENU = [
     { id: 'moneda', label: 'Moneda', icon: FiDollarSign },
@@ -61,17 +59,17 @@ export default function Configuracion() {
     })();
 
     const renderMoneda = () => (
-        <div className="config-form-container">
-            <div className="config-section-header">
-                <h2 className="config-section-title">Configuración de Moneda</h2>
-                <p className="config-section-desc">
+        <div>
+            <div className="mb-8 border-b border-border pb-4">
+                <h2 className="font-display text-xl font-extrabold text-text max-[600px]:text-lg">Configuración de Moneda</h2>
+                <p className="mt-1.5 text-sm text-muted">
                     Tasa de cambio e IVA. El porcentaje de IVA se aplica automáticamente en las ventas a los
                     productos marcados como «Grava IVA» en inventario.
                 </p>
             </div>
 
-            <div className="config-panel-form">
-                <div className="mod-form-group">
+            <div className={PANEL_FORM}>
+                <div className={FORM_GROUP}>
                     <label>Moneda de referencia</label>
                     <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
                         <option value="USD">USD — Dólar</option>
@@ -79,41 +77,29 @@ export default function Configuracion() {
                     </select>
                 </div>
 
-                <div className="mod-form-group">
+                <div className={FORM_GROUP}>
                     <label>Tasa de cambio (Bs. por unidad)</label>
-                    <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={exchangeRate}
-                        onChange={(e) => setExchangeRate(parseFloat(e.target.value) || 0)}
-                    />
-                    <p className="mod-form-hint">Precio o tasa usada para convertir a bolívares.</p>
+                    <input type="number" step="0.01" min="0" value={exchangeRate} onChange={(e) => setExchangeRate(parseFloat(e.target.value) || 0)} />
+                    <p className={FORM_HINT}>Precio o tasa usada para convertir a bolívares.</p>
                 </div>
 
-                <div className="mod-form-group">
+                <div className={FORM_GROUP}>
                     <label>IVA (%)</label>
-                    <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={iva}
-                        onChange={(e) => setIva(parseFloat(e.target.value) || 0)}
-                    />
+                    <input type="number" step="0.01" min="0" value={iva} onChange={(e) => setIva(parseFloat(e.target.value) || 0)} />
                 </div>
 
-                <div className="preview-box">
+                <div className={PREVIEW_BOX}>
                     <span>
-                        Ejemplo: 100 {currency} = <strong>Bs. {preview.subtotal}</strong>
+                        Ejemplo: 100 {currency} = <strong className="mx-1.5 text-lg text-accent">Bs. {preview.subtotal}</strong>
                     </span>
                     <br />
-                    <span className="iva-text">Con IVA ({iva}%): Bs. {preview.total}</span>
+                    <span className="text-[13px]">Con IVA ({iva}%): Bs. {preview.total}</span>
                 </div>
 
-                <div className="mod-modal-footer" style={{ padding: 0, marginTop: 8 }}>
+                <div className={`${MODAL_FOOTER} mt-2 !p-0`}>
                     <button
                         type="button"
-                        className="btn-mod primary"
+                        className={BTN_MOD_PRIMARY}
                         disabled={isLoading}
                         onClick={async () => {
                             setIsLoading(true);
@@ -133,7 +119,7 @@ export default function Configuracion() {
                             }
                         }}
                     >
-                        {isLoading ? <FiRefreshCw className="spin" /> : <FiSave />}
+                        {isLoading ? <FiRefreshCw className="animate-spin" /> : <FiSave />}
                         Guardar
                     </button>
                 </div>
@@ -141,17 +127,19 @@ export default function Configuracion() {
         </div>
     );
 
+    const reqCls = (ok) => `flex items-center gap-1.5 text-xs ${ok ? 'text-[#10b981]' : 'text-muted'}`;
+
     const renderClave = () => (
-        <div className="config-form-container">
-            <div className="config-section-header">
-                <h2 className="config-section-title">Cambiar Contraseña</h2>
-                <p className="config-section-desc">Actualiza la clave de acceso de tu usuario.</p>
+        <div>
+            <div className="mb-8 border-b border-border pb-4">
+                <h2 className="font-display text-xl font-extrabold text-text max-[600px]:text-lg">Cambiar Contraseña</h2>
+                <p className="mt-1.5 text-sm text-muted">Actualiza la clave de acceso de tu usuario.</p>
             </div>
 
-            <div className="config-panel-form">
-                <div className="mod-form-group">
+            <div className={PANEL_FORM}>
+                <div className={FORM_GROUP}>
                     <label>Contraseña actual</label>
-                    <div className="input-with-icon">
+                    <div className={INPUT_ICON}>
                         <input
                             type={showPass.current ? 'text' : 'password'}
                             value={passwords.current}
@@ -159,20 +147,16 @@ export default function Configuracion() {
                             maxLength={64}
                             autoComplete="current-password"
                         />
-                        <button
-                            type="button"
-                            className="btn-show-pass"
-                            onClick={() => setShowPass({ ...showPass, current: !showPass.current })}
-                        >
+                        <button type="button" className={BTN_SHOW_PASS} onClick={() => setShowPass({ ...showPass, current: !showPass.current })}>
                             {showPass.current ? <FiEyeOff /> : <FiEye />}
                         </button>
                     </div>
                 </div>
 
-                <div className="mod-form-row">
-                    <div className="mod-form-group">
+                <div className={FORM_ROW}>
+                    <div className={FORM_GROUP}>
                         <label>Nueva contraseña</label>
-                        <div className="input-with-icon">
+                        <div className={INPUT_ICON}>
                             <input
                                 type={showPass.new ? 'text' : 'password'}
                                 value={passwords.new}
@@ -180,18 +164,14 @@ export default function Configuracion() {
                                 maxLength={64}
                                 autoComplete="new-password"
                             />
-                            <button
-                                type="button"
-                                className="btn-show-pass"
-                                onClick={() => setShowPass({ ...showPass, new: !showPass.new })}
-                            >
+                            <button type="button" className={BTN_SHOW_PASS} onClick={() => setShowPass({ ...showPass, new: !showPass.new })}>
                                 {showPass.new ? <FiEyeOff /> : <FiEye />}
                             </button>
                         </div>
                     </div>
-                    <div className="mod-form-group">
+                    <div className={FORM_GROUP}>
                         <label>Confirmar contraseña</label>
-                        <div className="input-with-icon">
+                        <div className={INPUT_ICON}>
                             <input
                                 type={showPass.confirm ? 'text' : 'password'}
                                 value={passwords.confirm}
@@ -199,67 +179,42 @@ export default function Configuracion() {
                                 maxLength={64}
                                 autoComplete="new-password"
                             />
-                            <button
-                                type="button"
-                                className="btn-show-pass"
-                                onClick={() => setShowPass({ ...showPass, confirm: !showPass.confirm })}
-                            >
+                            <button type="button" className={BTN_SHOW_PASS} onClick={() => setShowPass({ ...showPass, confirm: !showPass.confirm })}>
                                 {showPass.confirm ? <FiEyeOff /> : <FiEye />}
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <div style={{ marginBottom: 16 }}>
-                    <p className={`password-requirement ${passwords.new.length >= 8 ? 'check' : ''}`}>
+                <div className="mb-4">
+                    <p className={reqCls(passwords.new.length >= 8)}>
                         {passwords.new.length >= 8 ? <FiCheckCircle /> : <FiXCircle />} Mínimo 8 caracteres
                     </p>
-                    <p className={`password-requirement ${/[A-Z]/.test(passwords.new) ? 'check' : ''}`}>
+                    <p className={reqCls(/[A-Z]/.test(passwords.new))}>
                         {/[A-Z]/.test(passwords.new) ? <FiCheckCircle /> : <FiXCircle />} Al menos una mayúscula
                     </p>
-                    <p className={`password-requirement ${/[0-9]/.test(passwords.new) ? 'check' : ''}`}>
+                    <p className={reqCls(/[0-9]/.test(passwords.new))}>
                         {/[0-9]/.test(passwords.new) ? <FiCheckCircle /> : <FiXCircle />} Al menos un número
                     </p>
-                    <p
-                        className={`password-requirement ${passwords.new && passwords.new === passwords.confirm ? 'check' : ''}`}
-                    >
-                        {passwords.new && passwords.new === passwords.confirm ? (
-                            <FiCheckCircle />
-                        ) : (
-                            <FiXCircle />
-                        )}{' '}
-                        Las contraseñas coinciden
+                    <p className={reqCls(passwords.new && passwords.new === passwords.confirm)}>
+                        {passwords.new && passwords.new === passwords.confirm ? <FiCheckCircle /> : <FiXCircle />} Las contraseñas coinciden
                     </p>
                 </div>
 
-                <div className="mod-modal-footer" style={{ padding: 0 }}>
+                <div className={`${MODAL_FOOTER} !p-0`}>
                     <button
                         type="button"
-                        className="btn-mod primary"
+                        className={BTN_MOD_PRIMARY}
                         onClick={() => {
-                            if (
-                                passwords.new.length < 8 ||
-                                !/[A-Z]/.test(passwords.new) ||
-                                !/[0-9]/.test(passwords.new)
-                            ) {
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Seguridad insuficiente',
-                                    text: 'La contraseña debe tener al menos 8 caracteres, una mayúscula y un número.',
-                                });
+                            if (passwords.new.length < 8 || !/[A-Z]/.test(passwords.new) || !/[0-9]/.test(passwords.new)) {
+                                Swal.fire({ icon: 'error', title: 'Seguridad insuficiente', text: 'La contraseña debe tener al menos 8 caracteres, una mayúscula y un número.' });
                                 return;
                             }
                             if (passwords.new !== passwords.confirm) {
                                 Swal.fire({ icon: 'error', title: 'Error', text: 'Las contraseñas no coinciden.' });
                                 return;
                             }
-                            Swal.fire({
-                                icon: 'success',
-                                title: '¡Actualizada!',
-                                text: 'Tu contraseña ha sido cambiada.',
-                                timer: 2000,
-                                showConfirmButton: false,
-                            });
+                            Swal.fire({ icon: 'success', title: '¡Actualizada!', text: 'Tu contraseña ha sido cambiada.', timer: 2000, showConfirmButton: false });
                             setPasswords({ current: '', new: '', confirm: '' });
                         }}
                     >
@@ -271,31 +226,37 @@ export default function Configuracion() {
     );
 
     return (
-        <div className="config-layout" style={{ position: 'relative' }}>
+        <div className="relative grid min-h-[calc(100vh-100px)] grid-cols-[280px_1fr] gap-6 p-6 max-[1024px]:grid-cols-[240px_1fr] max-[900px]:grid-cols-1">
             {isLoading && (
-                <div className="loading-overlay">
-                    <FiRefreshCw className="loading-spinner spin" />
-                    <p className="loading-text">Cargando configuración…</p>
+                <div className="absolute inset-0 z-[1000] flex flex-col items-center justify-center rounded-[20px] bg-white/70 backdrop-blur-[2px]">
+                    <FiRefreshCw className="mb-3 animate-spin text-[40px] text-accent" />
+                    <p className="text-[15px] font-semibold text-text">Cargando configuración…</p>
                 </div>
             )}
-            <div className="config-sidebar">
-                <h3 className="config-sidebar-title">Configuración</h3>
+            <div className="flex h-fit flex-col gap-2 rounded-2xl border border-border bg-surface px-4 py-6 shadow-brand max-[900px]:flex-row max-[900px]:overflow-x-auto max-[900px]:p-4">
+                <h3 className="mb-4 px-3 font-display text-lg font-extrabold text-text max-[900px]:hidden">Configuración</h3>
                 {CONFIG_MENU.map((item) => (
                     <div
                         key={item.id}
-                        className={`config-nav-item ${activeTab === item.id ? 'active' : ''}`}
+                        className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium transition max-[900px]:flex-[0_0_auto] ${
+                            activeTab === item.id
+                                ? 'border-accent/20 bg-accent/[0.08] font-semibold text-accent'
+                                : 'border-transparent text-muted hover:bg-bg hover:text-accent'
+                        }`}
                         onClick={() => setActiveTab(item.id)}
                         role="button"
                         tabIndex={0}
                         onKeyDown={(e) => e.key === 'Enter' && setActiveTab(item.id)}
                     >
-                        <item.icon className="config-nav-icon" />
+                        <item.icon className="text-lg" />
                         <span>{item.label}</span>
                     </div>
                 ))}
             </div>
 
-            <div className="config-content">{activeTab === 'clave' ? renderClave() : renderMoneda()}</div>
+            <div className="rounded-2xl border border-border bg-surface p-8 shadow-brand max-[600px]:px-4 max-[600px]:py-6">
+                {activeTab === 'clave' ? renderClave() : renderMoneda()}
+            </div>
         </div>
     );
 }

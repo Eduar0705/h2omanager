@@ -1,15 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
-import { 
-    FiMapPin, 
+import {
+    FiMapPin,
     FiUser,
-    FiSearch, 
-    FiShoppingCart, 
-    FiCheck, 
-    FiDollarSign, 
-    FiCreditCard, 
-    FiSmartphone, 
-    FiPlus, 
-    FiMinus, 
+    FiSearch,
+    FiShoppingCart,
+    FiCheck,
+    FiDollarSign,
+    FiCreditCard,
+    FiSmartphone,
+    FiPlus,
+    FiMinus,
     FiTrash2,
     FiPrinter
 } from 'react-icons/fi';
@@ -23,7 +23,6 @@ import * as catalogoService from './services/catalogo-ventas.service';
 import * as ventaService from './services/ventas.service';
 import * as configService from './services/config.service';
 import { calcularTotalesCarrito } from './services/ventas-calculo';
-import '../assets/css/ventas.css';
 
 const STEPS = [
     { id: 1, label: 'Venta Local', icon: FiMapPin },
@@ -34,23 +33,10 @@ const STEPS = [
 ];
 
 const BANCOS_VE = [
-    'Banco de Venezuela',
-    'Banesco',
-    'Banco Mercantil',
-    'BBVA Provincial',
-    'Banco Nacional de Crédito (BNC)',
-    'Banco del Tesoro',
-    'Banco Bicentenario',
-    'Banco Exterior',
-    'Banco Caroní',
-    'Banco Sofitasa',
-    'Banco Plaza',
-    'Bancaribe',
-    'Banco Activo',
-    'Bancamiga',
-    'Banco Fondo Común (BFC)',
-    'Mi Banco',
-    '100% Banco',
+    'Banco de Venezuela', 'Banesco', 'Banco Mercantil', 'BBVA Provincial',
+    'Banco Nacional de Crédito (BNC)', 'Banco del Tesoro', 'Banco Bicentenario',
+    'Banco Exterior', 'Banco Caroní', 'Banco Sofitasa', 'Banco Plaza', 'Bancaribe',
+    'Banco Activo', 'Bancamiga', 'Banco Fondo Común (BFC)', 'Mi Banco', '100% Banco',
     'Banco Agrícola de Venezuela',
 ];
 
@@ -115,6 +101,15 @@ const TIPO_ICON = {
     INSUMO: FiTool,
 };
 
+// ── Clases Tailwind reutilizables del wizard ──
+const WIZARD_PANEL = 'flex min-h-[400px] flex-col rounded-[20px] border border-border bg-surface p-[30px]';
+const WIZARD_FOOTER = 'mt-auto flex justify-between border-t border-border pt-[30px]';
+const BTN_WIZARD = 'flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold transition';
+const BTN_BACK = `${BTN_WIZARD} bg-[#f1f5f9] text-text hover:bg-[#e2e8f0]`;
+const BTN_NEXT = `${BTN_WIZARD} bg-accent text-white shadow-[0_4px_12px_rgba(0,119,204,0.2)] hover:-translate-y-0.5 hover:bg-[#0066b3] disabled:translate-y-0 disabled:cursor-not-allowed disabled:bg-[#cbd5e1] disabled:shadow-none`;
+const TIPO_BADGE = { producto: 'bg-[#dbeafe] text-[#1d4ed8]', servicio: 'bg-[#ede9fe] text-[#6d28d9]', insumo: 'bg-[#ffedd5] text-[#c2410c]' };
+const TIPO_ICON_WRAP = { producto: 'bg-[#e0f2fe] text-accent', servicio: 'bg-[#ede9fe] text-[#7c3aed]', insumo: 'bg-[#ffedd5] text-[#ea580c]' };
+
 export default function VentasWizard() {
     const { user } = useAuth();
     const sucursalId = Number(user?.sucursalId ?? 1);
@@ -139,15 +134,7 @@ export default function VentasWizard() {
     const [paymentDetails, setPaymentDetails] = useState({
         banco: '',
         referencia: '',
-        // Mixed payment: amounts per method
-        mixedMethods: {
-            efectivo_usd: 0,
-            efectivo_ves: 0,
-            pago_movil: 0,
-            transferencia: 0,
-            punto: 0,
-        },
-        // Bank/ref per mixed sub-method
+        mixedMethods: { efectivo_usd: 0, efectivo_ves: 0, pago_movil: 0, transferencia: 0, punto: 0 },
         mixedBanco: { pago_movil: '', transferencia: '' },
         mixedRef: { pago_movil: '', transferencia: '' },
     });
@@ -228,10 +215,8 @@ export default function VentasWizard() {
     const totalNeededBs = cartTotalUSD * (config?.exchangeRate || 1);
     const mixedRemaining = totalNeededBs - mixedTotalBs;
 
-    // Validate reference: exactly 6 numeric digits
     const isValidRef = (ref) => /^\d{6}$/.test(ref);
 
-    // Check if a single method needs bank/ref and if valid
     const isSingleMethodValid = () => {
         if (!paymentMethod || paymentMethod === 'mixto') return false;
         if (paymentMethod === 'credito') {
@@ -244,13 +229,11 @@ export default function VentasWizard() {
         return true;
     };
 
-    // Check if mixed payment is valid
     const isMixedValid = () => {
         if (paymentMethod !== 'mixto') return false;
         const mm = paymentDetails.mixedMethods;
         const hasSomeAmount = Object.values(mm).some(v => v > 0);
         if (!hasSomeAmount) return false;
-        // Validate bank/ref for pago_movil and transferencia if used in mixed
         if (mm.pago_movil > 0) {
             if (!paymentDetails.mixedBanco.pago_movil || !isValidRef(paymentDetails.mixedRef.pago_movil)) return false;
         }
@@ -290,13 +273,7 @@ export default function VentasWizard() {
             }
             return [
                 ...prev,
-                {
-                    ...product,
-                    cartKey,
-                    qty: 1,
-                    price: Number(product.price || 0),
-                    gravaIva: product.gravaIva !== false,
-                },
+                { ...product, cartKey, qty: 1, price: Number(product.price || 0), gravaIva: product.gravaIva !== false },
             ];
         });
     };
@@ -353,7 +330,6 @@ export default function VentasWizard() {
                 text: 'La orden se ha registrado correctamente.',
                 confirmButtonColor: 'var(--accent)'
             }).then(async () => {
-                // Reset Wizard
                 try {
                     setClients(await getClients());
                 } catch {
@@ -384,24 +360,22 @@ export default function VentasWizard() {
 
     // Render Steps
     const renderStep1 = () => (
-        <div className="wizard-panel">
-            <div className="panel-header">
-                <h2>Tipo de venta</h2>
-                <p>Este módulo registra únicamente ventas locales.</p>
+        <div className={WIZARD_PANEL}>
+            <div className="mb-[30px]">
+                <h2 className="font-display text-2xl text-text">Tipo de venta</h2>
+                <p className="mt-1 text-sm text-muted">Este módulo registra únicamente ventas locales.</p>
             </div>
-            <div className="type-selector">
-                <div
-                    className="type-card selected"
-                >
-                    <FiMapPin className="type-icon" />
-                    <h3>Compra Local</h3>
-                    <p>El cliente retira en la planta</p>
+            <div className="mt-5 flex justify-center gap-5">
+                <div className="max-w-[300px] flex-1 cursor-pointer rounded-2xl border-2 border-accent bg-accent/[0.05] p-[30px] text-center">
+                    <FiMapPin className="mx-auto mb-4 block text-5xl text-accent" />
+                    <h3 className="mb-2 text-text">Compra Local</h3>
+                    <p className="text-sm text-muted">El cliente retira en la planta</p>
                 </div>
             </div>
 
-            <div className="wizard-footer">
+            <div className={WIZARD_FOOTER}>
                 <div />
-                <button className="btn-wizard btn-wizard-next" disabled={!isStep1Valid} onClick={nextStep}>
+                <button className={BTN_NEXT} disabled={!isStep1Valid} onClick={nextStep}>
                     Siguiente Paso
                 </button>
             </div>
@@ -413,104 +387,72 @@ export default function VentasWizard() {
     const getAvatarColor = (name = '') => AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
 
     const renderStep2 = () => (
-        <div className="wizard-panel">
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', margin: '0 0 24px 0' }}>
-                Seleccionar Cliente
-            </h2>
+        <div className={WIZARD_PANEL}>
+            <h2 className="mb-6 font-display text-[22px]">Seleccionar Cliente</h2>
             <>
-                    {/* Search bar */}
-                    <div style={{ position: 'relative', marginBottom: '20px' }}>
-                        <FiSearch style={{
-                            position: 'absolute', left: '14px', top: '50%',
-                            transform: 'translateY(-50%)', color: '#94a3b8', fontSize: '17px'
-                        }} />
-                        <input
-                            type="text"
-                            value={searchClient}
-                            onChange={e => setSearchClient(e.target.value)}
-                            placeholder="Buscar cliente por nombre, cédula o teléfono..."
-                            style={{
-                                width: '100%', boxSizing: 'border-box',
-                                padding: '13px 16px 13px 44px',
-                                border: '1px solid #dde3ec', borderRadius: '10px',
-                                fontSize: '14px', outline: 'none', background: '#fff',
-                            }}
-                        />
-                    </div>
+                {/* Search bar */}
+                <div style={{ position: 'relative', marginBottom: '20px' }}>
+                    <FiSearch style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: '17px' }} />
+                    <input
+                        type="text"
+                        value={searchClient}
+                        onChange={e => setSearchClient(e.target.value)}
+                        placeholder="Buscar cliente por nombre, cédula o teléfono..."
+                        style={{ width: '100%', boxSizing: 'border-box', padding: '13px 16px 13px 44px', border: '1px solid #dde3ec', borderRadius: '10px', fontSize: '14px', outline: 'none', background: '#fff' }}
+                    />
+                </div>
 
-                    {/* Client grid */}
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-                        gap: '14px',
-                        maxHeight: '340px',
-                        overflowY: 'auto',
-                    }}>
-                        {(searchClient.length > 0 ? filteredClients : clients).map(c => (
-                            <div
-                                key={c.id}
-                                onClick={() => setSelectedClient(c)}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '14px',
-                                    padding: '14px 16px',
-                                    border: selectedClient?.id === c.id ? '2px solid #3b82f6' : '1px solid #e2e8f0',
-                                    borderRadius: '12px',
-                                    background: selectedClient?.id === c.id ? '#eff6ff' : '#fff',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.15s',
-                                }}
-                            >
-                                {/* Avatar */}
-                                <div style={{
-                                    width: '44px', height: '44px', borderRadius: '50%',
-                                    background: getAvatarColor(c.name),
-                                    color: 'white', fontWeight: '700', fontSize: '15px',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    flexShrink: 0,
-                                }}>
-                                    {getInitials(c.name)}
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontWeight: '700', fontSize: '14px', color: '#1e293b' }}>{c.name}</div>
-                                    <div style={{ fontSize: '12px', color: '#64748b' }}>{c.cedula}</div>
-                                    <div style={{ fontSize: '12px', color: '#64748b' }}>{c.phone || ''}</div>
-                                    {c.tieneCredito && (
-                                        <div style={{ fontSize: '11px', marginTop: '4px', color: '#0369a1' }}>
-                                            Crédito: ${c.creditoDisponible?.toFixed(2)} disp.
-                                            {c.saldo > 0 ? ` · Debe $${c.saldo.toFixed(2)}` : ''}
-                                        </div>
-                                    )}
-                                    {(c.status === 'delinquent' || c.status === 'overlimit') && (
-                                        <span style={{
-                                            display: 'inline-block', marginTop: '4px', fontSize: '10px',
-                                            fontWeight: 700, padding: '2px 6px', borderRadius: '4px',
-                                            background: c.status === 'overlimit' ? '#fef2f2' : '#fff7ed',
-                                            color: c.status === 'overlimit' ? '#b91c1c' : '#c2410c',
-                                        }}>
-                                            {c.status === 'overlimit' ? 'Sobregirado' : 'Moroso'}
-                                        </span>
-                                    )}
-                                </div>
+                {/* Client grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '14px', maxHeight: '340px', overflowY: 'auto' }}>
+                    {(searchClient.length > 0 ? filteredClients : clients).map(c => (
+                        <div
+                            key={c.id}
+                            onClick={() => setSelectedClient(c)}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 16px',
+                                border: selectedClient?.id === c.id ? '2px solid #3b82f6' : '1px solid #e2e8f0',
+                                borderRadius: '12px',
+                                background: selectedClient?.id === c.id ? '#eff6ff' : '#fff',
+                                cursor: 'pointer', transition: 'all 0.15s',
+                            }}
+                        >
+                            <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: getAvatarColor(c.name), color: 'white', fontWeight: '700', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                {getInitials(c.name)}
                             </div>
-                        ))}
-                        {clients.length === 0 && (
-                            <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '30px', color: '#94a3b8' }}>
-                                No hay clientes registrados aún.
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontWeight: '700', fontSize: '14px', color: '#1e293b' }}>{c.name}</div>
+                                <div style={{ fontSize: '12px', color: '#64748b' }}>{c.cedula}</div>
+                                <div style={{ fontSize: '12px', color: '#64748b' }}>{c.phone || ''}</div>
+                                {c.tieneCredito && (
+                                    <div style={{ fontSize: '11px', marginTop: '4px', color: '#0369a1' }}>
+                                        Crédito: ${c.creditoDisponible?.toFixed(2)} disp.
+                                        {c.saldo > 0 ? ` · Debe $${c.saldo.toFixed(2)}` : ''}
+                                    </div>
+                                )}
+                                {(c.status === 'delinquent' || c.status === 'overlimit') && (
+                                    <span style={{ display: 'inline-block', marginTop: '4px', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: c.status === 'overlimit' ? '#fef2f2' : '#fff7ed', color: c.status === 'overlimit' ? '#b91c1c' : '#c2410c' }}>
+                                        {c.status === 'overlimit' ? 'Sobregirado' : 'Moroso'}
+                                    </span>
+                                )}
                             </div>
-                        )}
-                        {searchClient.length > 0 && filteredClients.length === 0 && (
-                            <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '20px', color: '#94a3b8' }}>
-                                No se encontró ningún cliente. Cambia a "Cliente No Registrado".
-                            </div>
-                        )}
-                    </div>
+                        </div>
+                    ))}
+                    {clients.length === 0 && (
+                        <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '30px', color: '#94a3b8' }}>
+                            No hay clientes registrados aún.
+                        </div>
+                    )}
+                    {searchClient.length > 0 && filteredClients.length === 0 && (
+                        <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '20px', color: '#94a3b8' }}>
+                            No se encontró ningún cliente. Cambia a "Cliente No Registrado".
+                        </div>
+                    )}
+                </div>
             </>
 
-            <div className="wizard-footer" style={{ marginTop: '30px' }}>
-                <button className="btn-wizard btn-wizard-back" onClick={prevStep}>Anterior</button>
-                <button className="btn-wizard btn-wizard-next" disabled={!isStep2Valid} onClick={nextStep}>
+            <div className={WIZARD_FOOTER} style={{ marginTop: '30px' }}>
+                <button className={BTN_BACK} onClick={prevStep}>Anterior</button>
+                <button className={BTN_NEXT} disabled={!isStep2Valid} onClick={nextStep}>
                     Continuar a Productos
                 </button>
             </div>
@@ -518,68 +460,69 @@ export default function VentasWizard() {
     );
 
     const renderStep3 = () => (
-        <div className="wizard-panel" style={{ background: 'transparent', border: 'none', padding: 0 }}>
-            <div className="ventas-catalog-toolbar">
-                <div className="ventas-tipo-filters" role="tablist">
-                    {catalogoService.TIPO_FILTROS.map((f) => (
-                        <button
-                            key={f.id}
-                            type="button"
-                            role="tab"
-                            aria-selected={catalogFilter === f.id}
-                            className={`ventas-tipo-chip ${catalogFilter === f.id ? 'active' : ''}`}
-                            style={{ '--chip-color': f.color }}
-                            onClick={() => handleCatalogFilterChange(f.id)}
-                        >
-                            {f.id === 'PRODUCTO' && <TbBottle />}
-                            {f.id === 'SERVICIO' && <FiLayers />}
-                            {f.id === 'INSUMO' && <FiTool />}
-                            {f.id === 'todos' && <FiBox />}
-                            {f.label}
-                        </button>
-                    ))}
+        <div className="flex min-h-[400px] flex-col">
+            <div className="mb-5 flex flex-wrap items-center gap-3.5 px-1">
+                <div className="flex flex-wrap gap-2" role="tablist">
+                    {catalogoService.TIPO_FILTROS.map((f) => {
+                        const active = catalogFilter === f.id;
+                        return (
+                            <button
+                                key={f.id}
+                                type="button"
+                                role="tab"
+                                aria-selected={active}
+                                className="inline-flex cursor-pointer items-center gap-1.5 rounded-[20px] border px-3.5 py-2 text-[13px] font-semibold transition"
+                                style={active
+                                    ? { background: f.color, borderColor: f.color, color: '#fff' }
+                                    : { background: 'var(--surface)', borderColor: 'var(--border)', color: 'var(--muted)' }}
+                                onClick={() => handleCatalogFilterChange(f.id)}
+                            >
+                                {f.id === 'PRODUCTO' && <TbBottle />}
+                                {f.id === 'SERVICIO' && <FiLayers />}
+                                {f.id === 'INSUMO' && <FiTool />}
+                                {f.id === 'todos' && <FiBox />}
+                                {f.label}
+                            </button>
+                        );
+                    })}
                 </div>
                 <input
                     type="search"
-                    className="ventas-catalog-search"
+                    className="min-w-[200px] flex-1 rounded-[10px] border border-border bg-surface px-3.5 py-2.5 text-sm outline-none focus:border-accent"
                     placeholder="Buscar por nombre, SKU o tipo…"
                     value={catalogSearch}
                     onChange={(e) => setCatalogSearch(e.target.value)}
                 />
             </div>
 
-            <div className="products-layout">
-                <div className="products-grid">
+            <div className="flex items-start gap-[30px] max-[900px]:flex-col">
+                <div className="grid flex-1 grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-5">
                     {filteredCatalog.map((item) => {
                         const TipoIcon = TIPO_ICON[item.tipo] || FiShoppingCart;
+                        const tipoKey = item.tipo?.toLowerCase();
                         const sinStock = item.controlaStock !== false && Number(item.stock) <= 0;
                         return (
-                            <div
-                                className={`product-card tipo-${item.tipo?.toLowerCase()} ${sinStock ? 'out-of-stock' : ''}`}
-                                key={item.id}
-                            >
-                                <span className={`product-tipo-badge tipo-${item.tipo?.toLowerCase()}`}>
+                            <div className={`relative rounded-2xl border border-border bg-white p-5 text-center transition hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(0,0,0,0.05)] ${sinStock ? 'opacity-65' : ''}`} key={item.id}>
+                                <span className={`absolute left-3 top-3 rounded-md px-2 py-[3px] text-[10px] font-bold uppercase tracking-[0.03em] ${TIPO_BADGE[tipoKey] || TIPO_BADGE.producto}`}>
                                     {item.tipoLabel}
                                 </span>
-                                <span className="bottle-badge">{item.sku || '—'}</span>
-                                <div className="product-icon-wrap">
+                                <span className="absolute right-[15px] top-[15px] rounded-lg bg-[#10b981] px-2 py-1 text-[11px] font-bold text-white">{item.sku || '—'}</span>
+                                <div className={`mx-auto mb-5 flex h-[60px] w-[60px] items-center justify-center rounded-2xl text-[28px] ${TIPO_ICON_WRAP[tipoKey] || TIPO_ICON_WRAP.producto}`}>
                                     <TipoIcon />
                                 </div>
-                                <div className="product-info">
-                                    <h4>{item.name}</h4>
-                                    <p className="product-price">${Number(item.price || 0).toFixed(2)}</p>
-                                    <p className="product-price-bs">
+                                <div>
+                                    <h4 className="mb-2 text-text">{item.name}</h4>
+                                    <p className="mb-1 text-xl font-bold text-accent">${Number(item.price || 0).toFixed(2)}</p>
+                                    <p className="mb-4 text-xs text-muted">
                                         Bs. {(Number(item.price || 0) * (config?.exchangeRate || 54.50)).toFixed(2)}
                                     </p>
-                                    <p className="product-stock">
-                                        {item.controlaStock === false
-                                            ? 'Servicio — sin control de stock'
-                                            : `Stock: ${Number(item.stock || 0)}`}
+                                    <p className="mb-4 text-[13px] text-muted">
+                                        {item.controlaStock === false ? 'Servicio — sin control de stock' : `Stock: ${Number(item.stock || 0)}`}
                                     </p>
                                 </div>
                                 <button
                                     type="button"
-                                    className="btn-add-product"
+                                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-accent py-2.5 font-semibold text-white transition hover:bg-[#0066b3] disabled:cursor-not-allowed disabled:bg-[#cbd5e1]"
                                     disabled={sinStock}
                                     onClick={() => addToCart({ ...item, title: item.name })}
                                 >
@@ -589,73 +532,71 @@ export default function VentasWizard() {
                         );
                     })}
                     {filteredCatalog.length === 0 && (
-                        <div className="ventas-catalog-empty">
-                            <FiShoppingCart />
+                        <div className="col-span-full px-10 py-10 text-center text-muted">
+                            <FiShoppingCart className="mx-auto mb-2.5 text-4xl opacity-25" />
                             <p>No hay artículos en esta categoría.</p>
                         </div>
                     )}
                 </div>
 
-                <div className="cart-sidebar">
-                    <h3>Items Agregados</h3>
-                    <div className="cart-items">
+                <div className="w-[320px] rounded-2xl border border-border bg-[#f8fafc] p-5 max-[900px]:w-full">
+                    <h3 className="mb-5 font-display text-lg">Items Agregados</h3>
+                    <div className="mb-5 flex max-h-[300px] flex-col gap-4 overflow-y-auto">
                         {cart.length === 0 ? (
-                            <p className="td-muted" style={{ textAlign: 'center' }}>Carrito vacío</p>
-                        ) : cart.map(item => (
-                            <div className="cart-item" key={item.cartKey || item.id}>
-                                <div className="cart-item-header">
-                                    <div>
-                                        <span className="cart-item-title">{item.title}</span>
-                                        {item.tipoLabel && (
-                                            <span className={`cart-tipo-tag tipo-${item.tipo?.toLowerCase()}`}>
-                                                {item.tipoLabel}
-                                            </span>
-                                        )}
+                            <p className="text-center text-muted">Carrito vacío</p>
+                        ) : cart.map(item => {
+                            const tipoKey = item.tipo?.toLowerCase();
+                            return (
+                                <div className="rounded-xl border border-border bg-white p-3" key={item.cartKey || item.id}>
+                                    <div className="mb-2.5 flex justify-between">
+                                        <div>
+                                            <span className="text-sm font-semibold">{item.title}</span>
+                                            {item.tipoLabel && (
+                                                <span className={`ml-1.5 inline-block rounded px-1.5 py-0.5 align-middle text-[10px] font-bold ${TIPO_BADGE[tipoKey] || TIPO_BADGE.producto}`}>
+                                                    {item.tipoLabel}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <span className="text-[13px] text-muted">${item.price.toFixed(2)} c/u</span>
                                     </div>
-                                    <span className="cart-item-price">${item.price.toFixed(2)} c/u</span>
-                                </div>
-                                <div className="cart-item-actions">
-                                    <div className="qty-controls">
-                                        <button className="btn-qty" onClick={() => updateQty(item.cartKey || item.id, -1)}><FiMinus /></button>
-                                        <span style={{ fontWeight: 600, width: '20px', textAlign: 'center' }}>{item.qty}</span>
-                                        <button className="btn-qty" onClick={() => updateQty(item.cartKey || item.id, 1)}><FiPlus /></button>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3 rounded-lg bg-[#f1f5f9] p-1">
+                                            <button className="flex h-6 w-6 items-center justify-center rounded-md border border-border bg-white" onClick={() => updateQty(item.cartKey || item.id, -1)}><FiMinus /></button>
+                                            <span style={{ fontWeight: 600, width: '20px', textAlign: 'center' }}>{item.qty}</span>
+                                            <button className="flex h-6 w-6 items-center justify-center rounded-md border border-border bg-white" onClick={() => updateQty(item.cartKey || item.id, 1)}><FiPlus /></button>
+                                        </div>
+                                        <button className="flex h-7 w-7 items-center justify-center rounded-md border-none bg-[#fee2e2] text-[#ef4444]" onClick={() => removeFromCart(item.cartKey || item.id)}><FiTrash2 /></button>
                                     </div>
-                                    <button className="btn-remove" onClick={() => removeFromCart(item.cartKey || item.id)}><FiTrash2 /></button>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
 
-                    <div className="cart-total-box">
-                        <div className="cart-total-lines">
-                            <div className="cart-total-row">
+                    <div className="flex flex-col gap-3 rounded-xl bg-accent p-5 text-white">
+                        <div className="flex flex-col gap-1.5 border-b border-white/25 pb-2.5 text-[13px] opacity-95">
+                            <div className="flex items-center justify-between">
                                 <span>Subtotal</span>
                                 <span>${cartSubtotalUSD.toFixed(2)}</span>
                             </div>
                             {ivaPorcentaje > 0 && cartIvaUSD > 0 && (
-                                <div className="cart-total-row iva">
+                                <div className="flex items-center justify-between font-semibold">
                                     <span>IVA ({ivaPorcentaje}%)</span>
                                     <span>${cartIvaUSD.toFixed(2)}</span>
                                 </div>
                             )}
                         </div>
-                        <div className="cart-total-main">
-                            <span className="total-label">Total:</span>
+                        <div className="flex items-center justify-between">
+                            <span className="text-base font-medium">Total:</span>
                             <div>
-                                <div className="total-amount">${cartTotalUSD.toFixed(2)}</div>
-                                <div className="total-bs">Bs. {cartTotalVES.toFixed(2)}</div>
+                                <div className="text-right text-2xl font-bold">${cartTotalUSD.toFixed(2)}</div>
+                                <div className="text-right text-[13px] opacity-80">Bs. {cartTotalVES.toFixed(2)}</div>
                             </div>
                         </div>
                     </div>
 
                     <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                        <button className="btn-wizard btn-wizard-back" style={{ flex: 1, justifyContent: 'center' }} onClick={prevStep}>Atrás</button>
-                        <button 
-                            className="btn-wizard btn-wizard-next" 
-                            style={{ flex: 1, justifyContent: 'center' }}
-                            disabled={!isStep3Valid} 
-                            onClick={nextStep}
-                        >
+                        <button className={BTN_BACK} style={{ flex: 1, justifyContent: 'center' }} onClick={prevStep}>Atrás</button>
+                        <button className={BTN_NEXT} style={{ flex: 1, justifyContent: 'center' }} disabled={!isStep3Valid} onClick={nextStep}>
                             Pagar
                         </button>
                     </div>
@@ -690,31 +631,27 @@ export default function VentasWizard() {
             { id: 'punto', label: 'Punto de Venta', currency: 'BS' },
         ];
 
-        // Shared input style for mixed payment
         const inputStyle = refInputStyle;
 
-
         return (
-            <div className="wizard-panel">
-                <div className="panel-header">
-                    <h2>Método de Pago</h2>
-                    <p>Selecciona cómo el cliente pagará el total de <strong>${cartTotalUSD.toFixed(2)}</strong> / <strong>Bs. {totalBs.toFixed(2)}</strong>.</p>
+            <div className={WIZARD_PANEL}>
+                <div className="mb-[30px]">
+                    <h2 className="font-display text-2xl text-text">Método de Pago</h2>
+                    <p className="mt-1 text-sm text-muted">Selecciona cómo el cliente pagará el total de <strong>${cartTotalUSD.toFixed(2)}</strong> / <strong>Bs. {totalBs.toFixed(2)}</strong>.</p>
                 </div>
-                
-                <div className="payment-methods">
+
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-5">
                     {paymentMethods.map(method => (
-                        <div 
+                        <div
                             key={method.id}
-                            className={`payment-card ${paymentMethod === method.id ? 'selected' : ''}`}
+                            className={`cursor-pointer rounded-2xl border-2 p-6 text-center transition ${paymentMethod === method.id ? 'border-accent bg-accent/[0.05]' : 'border-border hover:border-[#cbd5e1]'}`}
                             onClick={async () => {
                                 setPaymentMethod(method.id);
                                 setPaymentDetails((prev) => ({ ...prev, banco: '', referencia: '' }));
                                 if (method.id === 'credito' && selectedClient?.id != null) {
                                     try {
                                         const list = await getClients();
-                                        const fresh = list.find(
-                                            (c) => String(c.id) === String(selectedClient.id)
-                                        );
+                                        const fresh = list.find((c) => String(c.id) === String(selectedClient.id));
                                         if (fresh) setSelectedClient(fresh);
                                     } catch {
                                         /* usar datos en memoria */
@@ -722,8 +659,8 @@ export default function VentasWizard() {
                                 }
                             }}
                         >
-                            <method.icon className="payment-icon" />
-                            <h4>{method.label}</h4>
+                            <method.icon className="mx-auto mb-3 text-[32px] text-accent" />
+                            <h4 className="text-text">{method.label}</h4>
                         </div>
                     ))}
                 </div>
@@ -738,24 +675,10 @@ export default function VentasWizard() {
                 )}
 
                 {paymentMethod && paymentMethod !== 'mixto' && paymentMethod !== 'credito' && (
-                    <div style={{
-                        marginTop: '24px', borderRadius: '14px',
-                        border: '1px solid #e2e8f0', overflow: 'hidden',
-                        animation: 'fadeIn 0.3s ease',
-                    }}>
-                        {/* Total display */}
-                        <div style={{
-                            padding: '20px 24px',
-                            background: paymentMethod === 'efectivo_usd' ? '#eff6ff' : '#f0fdf4',
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        }}>
+                    <div style={{ marginTop: '24px', borderRadius: '14px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                        <div style={{ padding: '20px 24px', background: paymentMethod === 'efectivo_usd' ? '#eff6ff' : '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <div style={{
-                                    width: '44px', height: '44px', borderRadius: '12px',
-                                    background: paymentMethod === 'efectivo_usd' ? '#3b82f6' : '#22c55e',
-                                    color: 'white', display: 'flex', alignItems: 'center',
-                                    justifyContent: 'center', fontSize: '20px',
-                                }}>
+                                <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: paymentMethod === 'efectivo_usd' ? '#3b82f6' : '#22c55e', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
                                     <FiDollarSign />
                                 </div>
                                 <div>
@@ -784,7 +707,6 @@ export default function VentasWizard() {
                             </div>
                         </div>
 
-                        {/* Bank/Ref for pago_movil or transferencia */}
                         {(paymentMethod === 'pago_movil' || paymentMethod === 'transferencia') && (
                             <div style={{ padding: '16px 24px', background: '#fff', borderTop: '1px solid #f1f5f9' }}>
                                 <BankRefFields
@@ -796,7 +718,6 @@ export default function VentasWizard() {
                             </div>
                         )}
 
-                        {/* Desglose for non-USD */}
                         {paymentMethod !== 'efectivo_usd' && (
                             <div style={{ padding: '14px 24px', background: '#fff', borderTop: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#64748b' }}>
@@ -813,9 +734,8 @@ export default function VentasWizard() {
                     </div>
                 )}
 
-                {/* ═══ Pago Mixto ═══ */}
                 {paymentMethod === 'mixto' && (
-                    <div style={{ marginTop: '24px', borderRadius: '14px', border: '1px solid #e2e8f0', overflow: 'hidden', animation: 'fadeIn 0.3s ease' }}>
+                    <div style={{ marginTop: '24px', borderRadius: '14px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
                         <div style={{ padding: '16px 24px', background: '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
                             <p style={{ margin: 0, fontWeight: 700, fontSize: '15px', color: '#1e293b' }}>Pago Mixto</p>
                             <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#94a3b8' }}>
@@ -827,29 +747,17 @@ export default function VentasWizard() {
                             {mixedMethodsList.map(m => {
                                 const val = paymentDetails.mixedMethods[m.id] || 0;
                                 return (
-                                    <div key={m.id} style={{
-                                        padding: '14px 16px', borderRadius: '10px',
-                                        border: val > 0 ? '1.5px solid #3b82f6' : '1px solid #e2e8f0',
-                                        background: val > 0 ? '#fafbff' : '#fff',
-                                        transition: 'all 0.15s',
-                                    }}>
+                                    <div key={m.id} style={{ padding: '14px 16px', borderRadius: '10px', border: val > 0 ? '1.5px solid #3b82f6' : '1px solid #e2e8f0', background: val > 0 ? '#fafbff' : '#fff', transition: 'all 0.15s' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-                                            <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155', whiteSpace: 'nowrap' }}>
-                                                {m.label}
-                                            </label>
+                                            <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155', whiteSpace: 'nowrap' }}>{m.label}</label>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600 }}>
-                                                    {m.currency === 'USD' ? '$' : 'Bs.'}
-                                                </span>
+                                                <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600 }}>{m.currency === 'USD' ? '$' : 'Bs.'}</span>
                                                 <input
                                                     type="number" min="0" step="0.01"
                                                     value={val || ''}
                                                     onChange={(e) => {
                                                         const newVal = parseFloat(e.target.value) || 0;
-                                                        setPaymentDetails(prev => ({
-                                                            ...prev,
-                                                            mixedMethods: { ...prev.mixedMethods, [m.id]: newVal }
-                                                        }));
+                                                        setPaymentDetails(prev => ({ ...prev, mixedMethods: { ...prev.mixedMethods, [m.id]: newVal } }));
                                                     }}
                                                     placeholder="0.00"
                                                     style={{ ...inputStyle, width: '140px', textAlign: 'right' }}
@@ -861,19 +769,12 @@ export default function VentasWizard() {
                                                 Equivale a Bs. {(val * rate).toFixed(2)}
                                             </p>
                                         )}
-                                        {/* Bank/ref for pago_movil and transferencia inside mixed */}
                                         {m.needsBank && val > 0 && (
                                             <BankRefFields
                                                 banco={paymentDetails.mixedBanco[m.id]}
                                                 ref6={paymentDetails.mixedRef[m.id]}
-                                                onBancoChange={(v) => setPaymentDetails(prev => ({
-                                                    ...prev,
-                                                    mixedBanco: { ...prev.mixedBanco, [m.id]: v }
-                                                }))}
-                                                onRefChange={(v) => setPaymentDetails(prev => ({
-                                                    ...prev,
-                                                    mixedRef: { ...prev.mixedRef, [m.id]: v }
-                                                }))}
+                                                onBancoChange={(v) => setPaymentDetails(prev => ({ ...prev, mixedBanco: { ...prev.mixedBanco, [m.id]: v } }))}
+                                                onRefChange={(v) => setPaymentDetails(prev => ({ ...prev, mixedRef: { ...prev.mixedRef, [m.id]: v } }))}
                                             />
                                         )}
                                     </div>
@@ -881,13 +782,7 @@ export default function VentasWizard() {
                             })}
                         </div>
 
-                        {/* Resumen del pago mixto */}
-                        <div style={{
-                            padding: '16px 24px',
-                            background: mixedRemaining <= 0.01 && mixedRemaining >= -0.01 ? '#f0fdf4' : '#fff7ed',
-                            borderTop: '1px solid #f1f5f9',
-                            display: 'flex', flexDirection: 'column', gap: '6px',
-                        }}>
+                        <div style={{ padding: '16px 24px', background: mixedRemaining <= 0.01 && mixedRemaining >= -0.01 ? '#f0fdf4' : '#fff7ed', borderTop: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                             {mixedMethodsList.map(m => {
                                 const val = paymentDetails.mixedMethods[m.id] || 0;
                                 if (val <= 0) return null;
@@ -895,10 +790,7 @@ export default function VentasWizard() {
                                 return (
                                     <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#64748b' }}>
                                         <span>{m.label}</span>
-                                        <span>
-                                            {m.currency === 'USD' ? `$${val.toFixed(2)} → ` : ''}
-                                            Bs. {bsVal.toFixed(2)}
-                                        </span>
+                                        <span>{m.currency === 'USD' ? `$${val.toFixed(2)} → ` : ''}Bs. {bsVal.toFixed(2)}</span>
                                     </div>
                                 );
                             })}
@@ -907,22 +799,12 @@ export default function VentasWizard() {
                                 <span>Bs. {mixedTotalBs.toFixed(2)} / Bs. {totalNeededBs.toFixed(2)}</span>
                             </div>
                             {mixedRemaining > 0.01 && (
-                                <div style={{
-                                    display: 'flex', alignItems: 'center', gap: '8px',
-                                    marginTop: '6px', padding: '10px 14px',
-                                    borderRadius: '8px', background: '#fef3c7',
-                                    fontSize: '13px', fontWeight: 600, color: '#92400e',
-                                }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px', padding: '10px 14px', borderRadius: '8px', background: '#fef3c7', fontSize: '13px', fontWeight: 600, color: '#92400e' }}>
                                     ⚠️ Faltan Bs. {mixedRemaining.toFixed(2)} por cubrir
                                 </div>
                             )}
                             {mixedRemaining <= 0.01 && mixedRemaining >= -0.01 && Object.values(paymentDetails.mixedMethods).some(v => v > 0) && (
-                                <div style={{
-                                    display: 'flex', alignItems: 'center', gap: '8px',
-                                    marginTop: '6px', padding: '10px 14px',
-                                    borderRadius: '8px', background: '#dcfce7',
-                                    fontSize: '13px', fontWeight: 600, color: '#15803d',
-                                }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px', padding: '10px 14px', borderRadius: '8px', background: '#dcfce7', fontSize: '13px', fontWeight: 600, color: '#15803d' }}>
                                     <FiCheck /> Monto completo cubierto
                                 </div>
                             )}
@@ -930,10 +812,10 @@ export default function VentasWizard() {
                     </div>
                 )}
 
-                <div className="wizard-footer">
-                    <button className="btn-wizard btn-wizard-back" onClick={prevStep}>Anterior</button>
+                <div className={WIZARD_FOOTER}>
+                    <button className={BTN_BACK} onClick={prevStep}>Anterior</button>
                     <button
-                        className="btn-wizard btn-wizard-next"
+                        className={BTN_NEXT}
                         disabled={!isStep4Valid}
                         onClick={nextStep}
                         title={paymentMethod === 'credito' && !isStep4Valid ? (creditCheck.reason || 'Revise el crédito del cliente') : ''}
@@ -946,84 +828,82 @@ export default function VentasWizard() {
     };
 
     const renderStep5 = () => (
-        <div className="wizard-panel">
-            <div className="panel-header" style={{ textAlign: 'center' }}>
-                <h2>Confirmación de la Venta</h2>
-                <p>Revisa los detalles antes de imprimir el comprobante.</p>
+        <div className={WIZARD_PANEL}>
+            <div className="mb-[30px] text-center">
+                <h2 className="font-display text-2xl text-text">Confirmación de la Venta</h2>
+                <p className="mt-1 text-sm text-muted">Revisa los detalles antes de imprimir el comprobante.</p>
             </div>
 
-            <div className="receipt-wrapper">
-                <div className="receipt-paper">
-                    <div className="receipt-header">
-                        <h3>H2O MANAGER</h3>
-                        <p>Rif: J-12345678-9</p>
-                        <p>Fecha: {new Date().toLocaleString('es-VE')}</p>
-                        <p>Cliente: {selectedClient?.name}</p>
-                        <p>C.I: {selectedClient?.cedula}</p>
-                        <p>Tipo: Venta Local</p>
+            <div className="flex items-center justify-center p-5">
+                <div className="w-[300px] bg-[#ffffe0] px-5 py-[30px] font-mono text-black shadow-[0_4px_15px_rgba(0,0,0,0.1)]">
+                    <div className="mb-5 border-b border-dashed border-black pb-2.5 text-center">
+                        <h3 className="mb-1 text-lg">H2O MANAGER</h3>
+                        <p className="my-0.5 text-xs">Rif: J-12345678-9</p>
+                        <p className="my-0.5 text-xs">Fecha: {new Date().toLocaleString('es-VE')}</p>
+                        <p className="my-0.5 text-xs">Cliente: {selectedClient?.name}</p>
+                        <p className="my-0.5 text-xs">C.I: {selectedClient?.cedula}</p>
+                        <p className="my-0.5 text-xs">Tipo: Venta Local</p>
                     </div>
-                    
-                    <table className="receipt-table">
+
+                    <table className="mb-2.5 w-full text-[13px]">
                         <thead>
                             <tr>
-                                <th>CANT</th>
-                                <th>DESCRIPCION</th>
-                                <th className="text-right">TOTAL</th>
+                                <th className="border-b border-dashed border-black pb-1.5 text-left">CANT</th>
+                                <th className="border-b border-dashed border-black pb-1.5 text-left">DESCRIPCION</th>
+                                <th className="border-b border-dashed border-black pb-1.5 text-right">TOTAL</th>
                             </tr>
                         </thead>
                         <tbody>
                             {cart.map((item, idx) => (
                                 <tr key={idx}>
-                                    <td>{item.qty}</td>
-                                    <td>{item.title}</td>
-                                    <td className="text-right">${(item.price * item.qty).toFixed(2)}</td>
+                                    <td className="py-1">{item.qty}</td>
+                                    <td className="py-1">{item.title}</td>
+                                    <td className="py-1 text-right">${(item.price * item.qty).toFixed(2)}</td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
 
-                    <div className="receipt-totals">
-                        <div>
+                    <div className="mb-5 border-t border-dashed border-black pt-2.5 text-sm">
+                        <div className="mb-1 flex justify-between">
                             <span>SUBTOTAL:</span>
                             <span>${cartSubtotalUSD.toFixed(2)}</span>
                         </div>
                         {cartIvaUSD > 0 && (
-                            <div>
+                            <div className="mb-1 flex justify-between">
                                 <span>IVA ({ivaPorcentaje}%):</span>
                                 <span>${cartIvaUSD.toFixed(2)}</span>
                             </div>
                         )}
-                        <div className="bold">
+                        <div className="mb-1 flex justify-between text-base font-bold">
                             <span>TOTAL USD:</span>
                             <span>${cartTotalUSD.toFixed(2)}</span>
                         </div>
-                        <div className="bold" style={{ fontSize: '13px', marginTop: '5px' }}>
+                        <div className="mb-1 mt-[5px] flex justify-between text-[13px] font-bold">
                             <span>TOTAL BS:</span>
                             <span>Bs. {cartTotalVES.toFixed(2)}</span>
                         </div>
-                        <div style={{ fontSize: '12px', marginTop: '10px' }}>
-                            Tasa Ref: Bs. {config?.exchangeRate}
-                        </div>
-                        <div style={{ fontSize: '12px' }}>
+                        <div className="mt-2.5 text-xs">Tasa Ref: Bs. {config?.exchangeRate}</div>
+                        <div className="text-xs">
                             Pago: {paymentMethod === 'credito' ? 'CRÉDITO (pendiente de cobro)' : paymentMethod?.replace(/_/g, ' ').toUpperCase()}
                         </div>
                         {paymentMethod === 'credito' && selectedClient && (
-                            <div style={{ fontSize: '11px', marginTop: '6px', lineHeight: 1.4 }}>
+                            <div className="mt-1.5 text-[11px] leading-snug">
                                 Plazo: {Number(selectedClient.diasCredito) > 0 ? selectedClient.diasCredito : 30} días ·
                                 Nuevo saldo est.: ${(Number(selectedClient.saldo || 0) + cartTotalUSD).toFixed(2)}
                             </div>
                         )}
                     </div>
 
-                    <div className="receipt-footer">
+                    <div className="border-t border-dashed border-black pt-2.5 text-center text-xs">
                         ¡Gracias por su compra!<br/>
                         www.h2omanager.com
                     </div>
                 </div>
             </div>
 
-            <div className="wizard-footer">
-                <button className="btn-wizard btn-wizard-back" onClick={() => {
+            <div className={WIZARD_FOOTER}>
+                <button className={BTN_BACK} onClick={() => {
                     setSelectedClient(null);
                     setCart([]);
                     setPaymentMethod(null);
@@ -1035,7 +915,7 @@ export default function VentasWizard() {
                     });
                     setCurrentStep(1);
                 }}><FiPlus /> Nueva Venta</button>
-                <button className="btn-wizard btn-wizard-next" disabled={isLoading} onClick={handleConfirmSale} style={{ background: '#10b981' }}>
+                <button className={`${BTN_WIZARD} text-white shadow-[0_4px_12px_rgba(16,185,129,0.25)] hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60`} style={{ background: '#10b981' }} disabled={isLoading} onClick={handleConfirmSale}>
                     <FiPrinter /> Procesar e Imprimir
                 </button>
             </div>
@@ -1054,20 +934,28 @@ export default function VentasWizard() {
     };
 
     return (
-        <div className="ventas-container">
-            <div className="wizard-stepper">
+        <div className="animate-fade-up p-2.5">
+            <div className="relative mx-auto mb-10 flex max-w-[800px] items-center justify-between">
+                <div className="absolute left-10 right-10 top-6 z-0 h-1 rounded bg-[#e2e8f0]" />
                 {STEPS.map((step) => {
                     const isActive = currentStep === step.id;
                     const isCompleted = currentStep > step.id;
+                    const iconState = isActive
+                        ? 'bg-accent text-white shadow-[0_0_0_4px_rgba(0,119,204,0.2)]'
+                        : isCompleted
+                          ? 'bg-[#10b981] text-white'
+                          : 'bg-[#f1f5f9] text-[#94a3b8]';
+                    const labelState = isActive ? 'text-accent' : isCompleted ? 'text-text' : 'text-[#94a3b8]';
                     return (
-                        <div key={step.id} className={`wizard-step ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}>
-                            <div className="step-icon-wrap">
+                        <div key={step.id} className="relative z-[1] flex w-20 flex-col items-center gap-3 max-[600px]:w-auto">
+                            <div className={`flex h-12 w-12 items-center justify-center rounded-full border-4 border-bg text-xl transition ${iconState}`}>
                                 {isCompleted ? <FiCheck /> : <step.icon />}
                             </div>
-                            <span className="step-label">{step.label}</span>
+                            <span className={`text-center text-[13px] font-semibold max-[600px]:hidden ${labelState}`}>{step.label}</span>
                         </div>
                     );
                 })}
+                
             </div>
 
             {renderCurrentStep()}

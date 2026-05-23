@@ -22,8 +22,7 @@ import Swal from 'sweetalert2';
 import ModFormModal from '../components/ModFormModal';
 import { useAuth } from '../auth/AuthContext';
 import * as botellonService from './services/botellones.service';
-import '../assets/css/botellones.css';
-import '../assets/css/modulos.css';
+import { FORM_GROUP, FORM_ROW, FORM_HINT, FORM_CHECK, BTN_MOD, BTN_MOD_PRIMARY } from '../ui/mod';
 
 const TABS = [
     { id: 'botellones', label: 'Productos', icon: TbBottle, tipo: botellonService.TIPO_BOTELLON },
@@ -31,16 +30,20 @@ const TABS = [
     { id: 'insumos', label: 'Insumos', icon: FiTool, tipo: botellonService.TIPO_INSUMO },
 ];
 
+const STAT_ICON = {
+    blue: 'bg-[#e0f2fe] text-[#0077cc]',
+    green: 'bg-[#dcfce7] text-[#16a34a]',
+    orange: 'bg-[#ffedd5] text-[#ea580c]',
+};
+const TH = 'border-b border-border bg-[#f8fafc] px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.03em] text-muted';
+const TD = 'border-b border-border px-4 py-3 align-middle text-text';
+const BTN_PRIMARY = 'inline-flex items-center gap-2 rounded-[10px] border-none bg-accent px-[18px] py-2.5 font-semibold text-white shadow-[0_4px_12px_rgba(0,119,204,0.25)] transition hover:-translate-y-px hover:bg-[#0066b3]';
+const BTN_STOCK = 'flex items-center justify-center gap-1 rounded-[10px] border-none px-1.5 py-2.5 text-xs font-semibold transition hover:brightness-95';
+
 const emptyItemForm = (tabId = 'botellones') => ({
     tipoInventario: tabId === 'insumos' ? 'insumo' : tabId === 'servicios' ? 'servicio' : 'botellon',
-    nombre: '',
-    sku: '',
-    unidadMedida: 'UN',
-    stockMinimo: 0,
-    precioSugerido: 0,
-    proveedorId: '',
-    cuentaContableVentaId: '',
-    gravaIva: true,
+    nombre: '', sku: '', unidadMedida: 'UN', stockMinimo: 0, precioSugerido: 0,
+    proveedorId: '', cuentaContableVentaId: '', gravaIva: true,
 });
 
 const itemToForm = (item) => ({
@@ -129,13 +132,11 @@ export default function Botellones() {
         if (!cuentas.length) {
             cuentas = await cargarCuentasIngreso();
         }
-
         const baseForm = item ? itemToForm(item) : emptyItemForm(activeTab);
         if (!item) {
             const defecto = botellonService.cuentaIngresoPorDefecto(cuentas);
             if (defecto) baseForm.cuentaContableVentaId = defecto.id;
         }
-
         setItemForm(baseForm);
         setShowItemModal(true);
     };
@@ -195,11 +196,7 @@ export default function Botellones() {
 
     const abrirMovimiento = (item, type) => {
         if (item.controlaStock === false) {
-            Swal.fire(
-                'Sin stock físico',
-                'Los servicios no registran entradas ni salidas. Véndelos desde Ventas.',
-                'info'
-            );
+            Swal.fire('Sin stock físico', 'Los servicios no registran entradas ni salidas. Véndelos desde Ventas.', 'info');
             return;
         }
         setMovItem(item);
@@ -246,9 +243,7 @@ export default function Botellones() {
         const q = search.trim().toLowerCase();
         if (!q) return inventory;
         return inventory.filter(
-            (i) =>
-                i.name?.toLowerCase().includes(q) ||
-                i.sku?.toLowerCase().includes(q)
+            (i) => i.name?.toLowerCase().includes(q) || i.sku?.toLowerCase().includes(q)
         );
     }, [inventory, search]);
 
@@ -256,9 +251,7 @@ export default function Botellones() {
         const refs = filteredInventory.length;
         const conStock = filteredInventory.filter((i) => i.controlaStock !== false);
         const unidades = conStock.reduce((a, i) => a + Number(i.stock || 0), 0);
-        const alertas = conStock.filter(
-            (i) => i.stockBajo || Number(i.stock) <= Number(i.minStock)
-        ).length;
+        const alertas = conStock.filter((i) => i.stockBajo || Number(i.stock) <= Number(i.minStock)).length;
         const servicios = filteredInventory.filter((i) => i.type === botellonService.TIPO_SERVICIO).length;
         return { refs, unidades, alertas, servicios, esTabServicios: activeTab === 'servicios' };
     }, [filteredInventory, activeTab]);
@@ -267,11 +260,7 @@ export default function Botellones() {
         const skus = new Set(filteredInventory.map((i) => i.sku));
         const names = new Set(filteredInventory.map((i) => i.name));
         return history.filter(
-            (h) =>
-                h.itemSku === '' ||
-                h.itemNombre === '—' ||
-                skus.has(h.itemSku) ||
-                names.has(h.itemNombre)
+            (h) => h.itemSku === '' || h.itemNombre === '—' || skus.has(h.itemSku) || names.has(h.itemNombre)
         );
     }, [history, filteredInventory]);
 
@@ -284,39 +273,45 @@ export default function Botellones() {
     const tabMeta = TABS.find((t) => t.id === activeTab);
 
     return (
-        <div className="botellones-container">
+        <div className="relative animate-fade-up p-2.5">
             {isLoading && (
-                <div className="loading-overlay">
-                    <FiRefreshCw className="loading-spinner spin" />
-                    <p className="loading-text">Cargando inventario…</p>
+                <div className="fixed inset-0 z-[2000] flex flex-col items-center justify-center gap-2 bg-white/60">
+                    <FiRefreshCw className="animate-spin text-3xl text-accent" />
+                    <p className="text-sm text-muted">Cargando inventario…</p>
                 </div>
             )}
 
-            <header className="inv-page-header">
-                <div className="inv-page-title">
-                    <FiDroplet className="inv-title-icon" />
+            <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
+                <div className="flex items-start gap-3.5">
+                    <FiDroplet className="mt-1 text-[32px] text-accent" />
                     <div>
-                        <h1>Inventario</h1>
-                        <p>
+                        <h1 className="font-display text-[28px] text-text">Inventario</h1>
+                        <p className="mt-1 text-sm text-muted">
                             Productos, servicios e insumos · {user?.sucursal || 'Sucursal'} · ID {sucursalId}
                         </p>
                     </div>
                 </div>
-                <button type="button" className="btn-inv-primary" onClick={() => abrirFormularioItem()}>
+                <button type="button" className={BTN_PRIMARY} onClick={() => abrirFormularioItem()}>
                     <FiPlus /> Agregar artículo
                 </button>
             </header>
 
-            <nav className="inv-tabs" role="tablist">
+            <nav className="mb-6 flex flex-wrap gap-2" role="tablist">
                 {TABS.map((tab) => {
                     const Icon = tab.icon;
+                    const active = activeTab === tab.id;
+                    const activeCls = tab.id === 'servicios'
+                        ? 'border-[#7c3aed] bg-[#7c3aed] text-white'
+                        : 'border-accent bg-accent text-white';
                     return (
                         <button
                             key={tab.id}
                             type="button"
                             role="tab"
-                            aria-selected={activeTab === tab.id}
-                            className={`inv-tab ${activeTab === tab.id ? 'active' : ''}`}
+                            aria-selected={active}
+                            className={`inline-flex cursor-pointer items-center gap-2 rounded-xl border px-[18px] py-2.5 text-sm font-semibold transition ${
+                                active ? activeCls : 'border-border bg-surface text-muted hover:border-accent hover:text-accent'
+                            }`}
                             onClick={() => setActiveTab(tab.id)}
                         >
                             <Icon /> {tab.label}
@@ -325,115 +320,104 @@ export default function Botellones() {
                 })}
             </nav>
 
-            <div className="inventory-stats">
-                <div className="inv-stat-card">
-                    <div className="inv-stat-icon icon-blue">
+            <div className="mb-5 grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4 max-[768px]:grid-cols-1">
+                <div className="flex items-center gap-4 rounded-2xl border border-border bg-surface p-5">
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-[14px] text-[22px] ${STAT_ICON.blue}`}>
                         {tabMeta?.icon ? <tabMeta.icon /> : <FiPackage />}
                     </div>
-                    <div className="inv-stat-info">
-                        <h3>Referencias</h3>
-                        <p>{stats.refs}</p>
+                    <div>
+                        <h3 className="mb-1 text-xs font-semibold uppercase tracking-[0.04em] text-muted">Referencias</h3>
+                        <p className="font-display text-[26px] text-text">{stats.refs}</p>
                     </div>
                 </div>
-                <div className="inv-stat-card">
-                    <div className="inv-stat-icon icon-green">
+                <div className="flex items-center gap-4 rounded-2xl border border-border bg-surface p-5">
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-[14px] text-[22px] ${STAT_ICON.green}`}>
                         <FiPackage />
                     </div>
-                    <div className="inv-stat-info">
-                        <h3>{stats.esTabServicios ? 'Servicios activos' : 'Unidades en stock'}</h3>
-                        <p>{stats.esTabServicios ? stats.servicios : stats.unidades}</p>
+                    <div>
+                        <h3 className="mb-1 text-xs font-semibold uppercase tracking-[0.04em] text-muted">{stats.esTabServicios ? 'Servicios activos' : 'Unidades en stock'}</h3>
+                        <p className="font-display text-[26px] text-text">{stats.esTabServicios ? stats.servicios : stats.unidades}</p>
                     </div>
                 </div>
-                <div className="inv-stat-card">
-                    <div className={`inv-stat-icon ${stats.alertas > 0 ? 'icon-orange' : 'icon-blue'}`}>
+                <div className="flex items-center gap-4 rounded-2xl border border-border bg-surface p-5">
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-[14px] text-[22px] ${stats.alertas > 0 ? STAT_ICON.orange : STAT_ICON.blue}`}>
                         {stats.alertas > 0 ? <FiAlertTriangle /> : <FiLayers />}
                     </div>
-                    <div className="inv-stat-info">
-                        <h3>{stats.esTabServicios ? 'Tipo' : 'Alertas stock bajo'}</h3>
-                        <p>{stats.esTabServicios ? 'Sin inventario físico' : stats.alertas}</p>
+                    <div>
+                        <h3 className="mb-1 text-xs font-semibold uppercase tracking-[0.04em] text-muted">{stats.esTabServicios ? 'Tipo' : 'Alertas stock bajo'}</h3>
+                        <p className="font-display text-[26px] text-text">{stats.esTabServicios ? 'Sin inventario físico' : stats.alertas}</p>
                     </div>
                 </div>
             </div>
 
-            <div className="inv-toolbar">
+            <div className="mb-5 flex gap-2.5">
                 <input
                     type="search"
-                    className="inv-search"
+                    className="min-w-[200px] flex-1 rounded-[10px] border border-border bg-surface px-3.5 py-2.5 text-sm text-text outline-none focus:border-accent"
                     placeholder="Buscar por nombre o SKU…"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                 />
-                <button type="button" className="btn-inv-ghost" onClick={loadData} title="Actualizar">
+                <button type="button" className="flex items-center rounded-[10px] border border-border bg-surface px-3 py-2.5 text-muted transition hover:border-accent hover:text-accent" onClick={loadData} title="Actualizar">
                     <FiRefreshCw />
                 </button>
             </div>
 
-            <section className="inventory-grid">
+            <section className="mb-9 grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-[18px] max-[768px]:grid-cols-1">
                 {filteredInventory.map((item) => {
                     const esServicio = item.controlaStock === false;
-                    const bajo =
-                        !esServicio &&
-                        (item.stockBajo || Number(item.stock) <= Number(item.minStock));
+                    const bajo = !esServicio && (item.stockBajo || Number(item.stock) <= Number(item.minStock));
+                    const cardExtra = esServicio
+                        ? 'border-[#c4b5fd] bg-gradient-to-b from-surface to-[#f5f3ff]'
+                        : bajo
+                          ? 'border-[#fdba74] bg-gradient-to-b from-surface to-[#fff7ed]'
+                          : 'border-border';
                     return (
                         <article
-                            className={`inventory-item-card ${esServicio ? 'card-servicio' : ''} ${bajo ? 'card-alert' : ''}`}
+                            className={`rounded-2xl border bg-surface p-5 transition hover:shadow-[0_8px_24px_-12px_rgba(0,0,0,0.12)] ${cardExtra}`}
                             key={item.id}
                         >
-                            <div className="item-header">
-                                <div className="item-title">
-                                    <h2>{item.name}</h2>
-                                    <p className="item-meta">
+                            <div className="mb-3 flex items-start justify-between gap-2">
+                                <div>
+                                    <h2 className="font-display text-lg leading-tight text-text">{item.name}</h2>
+                                    <p className="mt-1 text-xs text-muted">
                                         {item.sku || 'Sin SKU'} · {item.unit}
                                         {!esServicio && ` · Mín. ${item.minStock}`}
                                     </p>
                                 </div>
-                                <span
-                                    className={`item-badge ${esServicio ? 'badge-servicio' : bajo ? 'badge-out' : 'badge-in'}`}
-                                >
+                                <span className={`whitespace-nowrap rounded-lg px-2.5 py-1 text-[11px] font-bold ${esServicio ? 'bg-[#ede9fe] text-[#6d28d9]' : bajo ? 'bg-[#fee2e2] text-[#991b1b]' : 'bg-[#dcfce7] text-[#166534]'}`}>
                                     {esServicio ? 'Servicio' : bajo ? 'Stock bajo' : 'OK'}
                                 </span>
                             </div>
 
-                            <div className="item-stock-display">
+                            <div className="py-4 pb-2 text-center">
                                 {esServicio ? (
                                     <>
-                                        <span className="stock-value stock-na">—</span>
-                                        <span className="stock-label">Sin stock físico</span>
+                                        <span className="block font-display text-[36px] leading-none text-[#94a3b8]">—</span>
+                                        <span className="text-xs font-semibold uppercase text-muted">Sin stock físico</span>
                                     </>
                                 ) : (
                                     <>
-                                        <span className="stock-value">{Number(item.stock)}</span>
-                                        <span className="stock-label">unidades</span>
+                                        <span className="block font-display text-[42px] leading-none text-text">{Number(item.stock)}</span>
+                                        <span className="text-xs font-semibold uppercase text-muted">unidades</span>
                                     </>
                                 )}
                             </div>
 
                             {item.price > 0 && (
-                                <p className="item-price-ref">Ref. ${Number(item.price).toFixed(2)}</p>
+                                <p className="mb-3 text-center text-[13px] text-muted">Ref. ${Number(item.price).toFixed(2)}</p>
                             )}
 
-                            <div className={`item-actions ${esServicio ? 'actions-servicio' : ''}`}>
-                                <button
-                                    type="button"
-                                    className="btn-stock edit"
-                                    onClick={() => abrirFormularioItem(item)}
-                                >
+                            <div className={`mt-2 grid gap-2 max-[768px]:grid-cols-1 ${esServicio ? 'grid-cols-1' : 'grid-cols-3'}`}>
+                                <button type="button" className={`${BTN_STOCK} bg-[#f1f5f9] text-[#475569]`} onClick={() => abrirFormularioItem(item)}>
                                     <FiEdit2 /> Editar
                                 </button>
                                 {!esServicio && (
                                     <>
-                                        <button
-                                            type="button"
-                                            className="btn-stock in"
-                                            onClick={() => abrirMovimiento(item, 'in')}
-                                        >
+                                        <button type="button" className={`${BTN_STOCK} bg-[#dcfce7] text-[#166534]`} onClick={() => abrirMovimiento(item, 'in')}>
                                             <FiPlus /> Entrada
                                         </button>
-                                        <button
-                                            type="button"
-                                            className="btn-stock out"
-                                            onClick={() => abrirMovimiento(item, 'out')}
-                                        >
+                                        <button type="button" className={`${BTN_STOCK} bg-[#fee2e2] text-[#991b1b]`} onClick={() => abrirMovimiento(item, 'out')}>
                                             <FiMinus /> Salida
                                         </button>
                                     </>
@@ -444,96 +428,85 @@ export default function Botellones() {
                 })}
 
                 {filteredInventory.length === 0 && !isLoading && (
-                    <div className="inv-empty-state">
-                        {activeTab === 'servicios' ? <FiLayers /> : activeTab === 'insumos' ? <FiTool /> : <TbBottle />}
-                        <p>No hay artículos en esta categoría.</p>
-                        <button type="button" className="btn-inv-primary" onClick={() => abrirFormularioItem()}>
+                    <div className="col-span-full px-6 py-12 text-center text-muted">
+                        <div className="mb-3 flex justify-center text-[40px] opacity-25">
+                            {activeTab === 'servicios' ? <FiLayers /> : activeTab === 'insumos' ? <FiTool /> : <TbBottle />}
+                        </div>
+                        <p className="mb-3">No hay artículos en esta categoría.</p>
+                        <button type="button" className={`${BTN_PRIMARY} mx-auto`} onClick={() => abrirFormularioItem()}>
                             <FiPlus /> Agregar el primero
                         </button>
                     </div>
                 )}
             </section>
 
-            <section className="inv-history-section">
-                <h2 className="history-section-title">
+            <section className="mt-2">
+                <h2 className="mb-4 flex items-center gap-2.5 font-display text-xl text-text">
                     <FiClock /> Movimientos recientes
                 </h2>
 
-                <div className="inv-table-wrap">
-                    <table className="inv-table">
+                <div className="overflow-hidden rounded-2xl border border-border bg-surface max-[768px]:overflow-x-auto">
+                    <table className="w-full border-collapse text-sm max-[768px]:min-w-[640px]">
                         <thead>
                             <tr>
-                                <th>Fecha</th>
-                                <th>Artículo</th>
-                                <th>Tipo</th>
-                                <th>Cant.</th>
-                                <th>Usuario</th>
-                                <th>Referencia</th>
+                                <th className={TH}>Fecha</th>
+                                <th className={TH}>Artículo</th>
+                                <th className={TH}>Tipo</th>
+                                <th className={TH}>Cant.</th>
+                                <th className={TH}>Usuario</th>
+                                <th className={TH}>Referencia</th>
                             </tr>
                         </thead>
                         <tbody>
                             {paginatedHistory.map((move) => (
-                                <tr key={move.id}>
-                                    <td className="td-muted">
-                                        {new Date(String(move.fecha).replace(' ', 'T')).toLocaleString('es-VE', {
-                                            dateStyle: 'short',
-                                            timeStyle: 'short',
-                                        })}
+                                <tr key={move.id} className="transition last:[&>td]:border-b-0 hover:bg-[#f8fafc]">
+                                    <td className={`${TD} text-[13px] text-muted`}>
+                                        {new Date(String(move.fecha).replace(' ', 'T')).toLocaleString('es-VE', { dateStyle: 'short', timeStyle: 'short' })}
                                     </td>
-                                    <td>
-                                        <span className="inv-item-name">{move.itemNombre}</span>
-                                        {move.itemSku && (
-                                            <span className="inv-item-sku">{move.itemSku}</span>
-                                        )}
+                                    <td className={TD}>
+                                        <span className="block font-semibold text-text">{move.itemNombre}</span>
+                                        {move.itemSku && <span className="block text-xs text-muted">{move.itemSku}</span>}
                                     </td>
-                                    <td>
-                                        <span
-                                            className={`inv-mov-pill ${move.esEntrada ? 'pill-in' : 'pill-out'}`}
-                                        >
-                                            {move.esEntrada ? (
-                                                <FiArrowDownLeft />
-                                            ) : (
-                                                <FiArrowUpRight />
-                                            )}
+                                    <td className={TD}>
+                                        <span className={`inline-flex items-center gap-1.5 rounded-[20px] px-2.5 py-1 text-xs font-semibold ${move.esEntrada ? 'bg-[#dcfce7] text-[#166534]' : 'bg-[#fee2e2] text-[#991b1b]'}`}>
+                                            {move.esEntrada ? <FiArrowDownLeft /> : <FiArrowUpRight />}
                                             {move.tipoLabel}
                                         </span>
                                     </td>
-                                    <td className="inv-qty">
-                                        {move.cantidad != null
-                                            ? `${move.esEntrada ? '+' : '−'}${move.cantidad}`
-                                            : '—'}
+                                    <td className={`${TD} font-bold [font-variant-numeric:tabular-nums]`}>
+                                        {move.cantidad != null ? `${move.esEntrada ? '+' : '−'}${move.cantidad}` : '—'}
                                     </td>
-                                    <td>{move.usuarioNombre || '—'}</td>
-                                    <td className="td-muted inv-ref">{move.referenciaDoc || move.motivo || '—'}</td>
+                                    <td className={TD}>{move.usuarioNombre || '—'}</td>
+                                    <td className={`${TD} max-w-[220px] overflow-hidden text-ellipsis whitespace-nowrap text-[13px] text-muted`}>{move.referenciaDoc || move.motivo || '—'}</td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
 
                     {historyForTab.length === 0 && (
-                        <div className="inv-empty-state compact">
-                            <FiClock />
+                        <div className="px-6 py-8 text-center text-muted">
+                            <div className="mb-3 flex justify-center text-[40px] opacity-25"><FiClock /></div>
                             <p>Sin movimientos registrados para esta vista.</p>
                         </div>
                     )}
                 </div>
 
                 {totalPages > 1 && (
-                    <div className="pagination-controls">
+                    <div className="mt-4 flex items-center justify-center gap-4">
                         <button
                             type="button"
-                            className="btn-pagination"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 py-2 text-[13px] transition disabled:cursor-not-allowed disabled:opacity-40 enabled:hover:border-accent enabled:hover:text-accent"
                             disabled={currentPage === 1}
                             onClick={() => setCurrentPage((p) => p - 1)}
                         >
                             <FiChevronLeft /> Anterior
                         </button>
-                        <span className="page-indicator">
+                        <span className="text-sm text-muted">
                             Página <strong>{currentPage}</strong> de {totalPages}
                         </span>
                         <button
                             type="button"
-                            className="btn-pagination"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 py-2 text-[13px] transition disabled:cursor-not-allowed disabled:opacity-40 enabled:hover:border-accent enabled:hover:text-accent"
                             disabled={currentPage === totalPages}
                             onClick={() => setCurrentPage((p) => p + 1)}
                         >
@@ -550,158 +523,89 @@ export default function Botellones() {
                 wide
                 footer={
                     <>
-                        <button type="button" className="btn-mod" onClick={() => setShowItemModal(false)}>
-                            Cancelar
-                        </button>
-                        <button type="button" className="btn-mod primary" onClick={guardarItem}>
-                            <FiCheck /> Guardar
-                        </button>
+                        <button type="button" className={BTN_MOD} onClick={() => setShowItemModal(false)}>Cancelar</button>
+                        <button type="button" className={BTN_MOD_PRIMARY} onClick={guardarItem}><FiCheck /> Guardar</button>
                     </>
                 }
             >
-                <div className="mod-form-group">
+                <div className={FORM_GROUP}>
                     <label>Tipo</label>
-                    <select
-                        value={itemForm.tipoInventario}
-                        onChange={(e) => setItemForm({ ...itemForm, tipoInventario: e.target.value })}
-                    >
+                    <select value={itemForm.tipoInventario} onChange={(e) => setItemForm({ ...itemForm, tipoInventario: e.target.value })}>
                         <option value="botellon">Producto / botellón</option>
                         <option value="servicio">Servicio (recarga, etc.)</option>
                         <option value="insumo">Insumo (tapas, sellos…)</option>
                     </select>
                 </div>
-                <div className="mod-form-row">
-                    <div className="mod-form-group">
+                <div className={FORM_ROW}>
+                    <div className={FORM_GROUP}>
                         <label>Nombre</label>
-                        <input
-                            value={itemForm.nombre}
-                            onChange={(e) => setItemForm({ ...itemForm, nombre: e.target.value })}
-                            placeholder="Ej: Botellón 20L"
-                        />
+                        <input value={itemForm.nombre} onChange={(e) => setItemForm({ ...itemForm, nombre: e.target.value })} placeholder="Ej: Botellón 20L" />
                     </div>
-                    <div className="mod-form-group">
+                    <div className={FORM_GROUP}>
                         <label>SKU</label>
-                        <input
-                            value={itemForm.sku}
-                            onChange={(e) => setItemForm({ ...itemForm, sku: e.target.value })}
-                            placeholder="PRO-BOT-20L"
-                        />
+                        <input value={itemForm.sku} onChange={(e) => setItemForm({ ...itemForm, sku: e.target.value })} placeholder="PRO-BOT-20L" />
                     </div>
                 </div>
-                <div className="mod-form-row">
-                    <div className="mod-form-group">
+                <div className={FORM_ROW}>
+                    <div className={FORM_GROUP}>
                         <label>Unidad</label>
-                        <input
-                            value={itemForm.unidadMedida}
-                            onChange={(e) => setItemForm({ ...itemForm, unidadMedida: e.target.value })}
-                            placeholder="UN"
-                        />
+                        <input value={itemForm.unidadMedida} onChange={(e) => setItemForm({ ...itemForm, unidadMedida: e.target.value })} placeholder="UN" />
                     </div>
-                    <div className="mod-form-group">
+                    <div className={FORM_GROUP}>
                         <label>Stock mínimo</label>
-                        <input
-                            type="number"
-                            min="0"
-                            step="1"
-                            value={itemForm.stockMinimo}
-                            onChange={(e) =>
-                                setItemForm({ ...itemForm, stockMinimo: Number(e.target.value) || 0 })
-                            }
-                        />
+                        <input type="number" min="0" step="1" value={itemForm.stockMinimo} onChange={(e) => setItemForm({ ...itemForm, stockMinimo: Number(e.target.value) || 0 })} />
                     </div>
                 </div>
-                <div className="mod-form-row">
-                    <div className="mod-form-group">
+                <div className={FORM_ROW}>
+                    <div className={FORM_GROUP}>
                         <label>Precio referencia (USD)</label>
-                        <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={itemForm.precioSugerido}
-                            onChange={(e) =>
-                                setItemForm({ ...itemForm, precioSugerido: Number(e.target.value) || 0 })
-                            }
-                        />
+                        <input type="number" min="0" step="0.01" value={itemForm.precioSugerido} onChange={(e) => setItemForm({ ...itemForm, precioSugerido: Number(e.target.value) || 0 })} />
                     </div>
-                    <div className="mod-form-group">
+                    <div className={FORM_GROUP}>
                         <label>Proveedor</label>
-                        <select
-                            value={itemForm.proveedorId}
-                            onChange={(e) => setItemForm({ ...itemForm, proveedorId: e.target.value })}
-                        >
+                        <select value={itemForm.proveedorId} onChange={(e) => setItemForm({ ...itemForm, proveedorId: e.target.value })}>
                             <option value="">Seleccionar…</option>
                             {proveedores.map((p) => (
-                                <option key={p.id} value={p.id}>
-                                    {p.label}
-                                </option>
+                                <option key={p.id} value={p.id}>{p.label}</option>
                             ))}
                         </select>
                     </div>
                 </div>
-                <div className="mod-form-group mod-form-cuenta-venta">
+                <div className={FORM_GROUP}>
                     <label>Cuenta contable de venta (ingreso)</label>
                     {cuentaContableInvalida && (
-                        <div className="cuenta-venta-alerta" role="alert">
-                            El ID <strong>{itemForm.cuentaContableVentaId}</strong> no corresponde a una
-                            cuenta de ingreso vigente. Seleccione una opción del listado para poder guardar.
+                        <div className="mb-2.5 rounded-lg border border-[#f59e0b] bg-[#fef3c7] px-3 py-2.5 text-[13px] leading-snug text-[#92400e]" role="alert">
+                            El ID <strong>{itemForm.cuentaContableVentaId}</strong> no corresponde a una cuenta de ingreso vigente. Seleccione una opción del listado para poder guardar.
                         </div>
                     )}
                     {cuentasIngreso.length === 0 ? (
-                        <p className="mod-form-hint cuenta-venta-sin-opciones">
+                        <p className={FORM_HINT}>
                             No hay cuentas de ingreso en el plan contable.{' '}
-                            <Link to="/gerente/contabilidad">Crear cuentas en Contabilidad</Link>
+                            <Link to="/gerente/contabilidad" className="font-semibold text-accent">Crear cuentas en Contabilidad</Link>
                             {' '}y vuelva a abrir este formulario.
                         </p>
                     ) : (
                         <select
-                            value={
-                                itemForm.cuentaContableVentaId === '' ||
-                                itemForm.cuentaContableVentaId == null
-                                    ? ''
-                                    : String(itemForm.cuentaContableVentaId)
-                            }
-                            onChange={(e) =>
-                                setItemForm({
-                                    ...itemForm,
-                                    cuentaContableVentaId: e.target.value
-                                        ? Number(e.target.value)
-                                        : '',
-                                })
-                            }
-                            className={cuentaContableInvalida ? 'input-cuenta-invalida' : ''}
+                            value={itemForm.cuentaContableVentaId === '' || itemForm.cuentaContableVentaId == null ? '' : String(itemForm.cuentaContableVentaId)}
+                            onChange={(e) => setItemForm({ ...itemForm, cuentaContableVentaId: e.target.value ? Number(e.target.value) : '' })}
+                            className={cuentaContableInvalida ? '!border-[#f59e0b] !bg-[#fffbeb]' : ''}
                         >
-                            <option value="">
-                                {cuentaContableInvalida
-                                    ? 'Corrija: elija una cuenta válida…'
-                                    : 'Seleccionar cuenta de ingreso…'}
-                            </option>
+                            <option value="">{cuentaContableInvalida ? 'Corrija: elija una cuenta válida…' : 'Seleccionar cuenta de ingreso…'}</option>
                             {cuentaContableInvalida && (
-                                <option value={itemForm.cuentaContableVentaId} disabled>
-                                    ⚠ Actual: ID {itemForm.cuentaContableVentaId} (inválida)
-                                </option>
+                                <option value={itemForm.cuentaContableVentaId} disabled>⚠ Actual: ID {itemForm.cuentaContableVentaId} (inválida)</option>
                             )}
                             {cuentasIngreso.map((c) => (
-                                <option key={c.id} value={c.id}>
-                                    {c.codigo} — {c.nombre}
-                                </option>
+                                <option key={c.id} value={c.id}>{c.codigo} — {c.nombre}</option>
                             ))}
                         </select>
                     )}
                     {cuentaSeleccionada && !cuentaContableInvalida && (
-                        <p className="mod-form-hint">
-                            ID {cuentaSeleccionada.id} · {cuentaSeleccionada.tipo}
-                        </p>
+                        <p className={FORM_HINT}>ID {cuentaSeleccionada.id} · {cuentaSeleccionada.tipo}</p>
                     )}
-                    <p className="mod-form-hint">
-                        Solo cuentas tipo <strong>Ingreso</strong> (ej. ventas de productos 4.1.02).
-                    </p>
+                    <p className={FORM_HINT}>Solo cuentas tipo <strong>Ingreso</strong> (ej. ventas de productos 4.1.02).</p>
                 </div>
-                <label className="mod-form-check" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <input
-                        type="checkbox"
-                        checked={itemForm.gravaIva}
-                        onChange={(e) => setItemForm({ ...itemForm, gravaIva: e.target.checked })}
-                    />
+                <label className={FORM_CHECK}>
+                    <input type="checkbox" checked={itemForm.gravaIva} onChange={(e) => setItemForm({ ...itemForm, gravaIva: e.target.checked })} />
                     Grava IVA
                 </label>
             </ModFormModal>
@@ -712,38 +616,23 @@ export default function Botellones() {
                 title={movType === 'in' ? 'Entrada de stock' : 'Salida de stock'}
                 footer={
                     <>
-                        <button type="button" className="btn-mod" onClick={() => setShowMovModal(false)}>
-                            Cancelar
-                        </button>
-                        <button type="button" className="btn-mod primary" onClick={confirmarMovimiento}>
-                            <FiCheck /> Registrar
-                        </button>
+                        <button type="button" className={BTN_MOD} onClick={() => setShowMovModal(false)}>Cancelar</button>
+                        <button type="button" className={BTN_MOD_PRIMARY} onClick={confirmarMovimiento}><FiCheck /> Registrar</button>
                     </>
                 }
             >
                 {movItem && (
-                    <p style={{ fontSize: '14px', color: 'var(--muted)', margin: '0 0 16px' }}>
+                    <p className="mb-4 text-sm text-muted">
                         <strong>{movItem.name}</strong> · Stock actual: {movItem.stock}
                     </p>
                 )}
-                <div className="mod-form-group">
+                <div className={FORM_GROUP}>
                     <label>Cantidad</label>
-                    <input
-                        type="number"
-                        min="1"
-                        step="1"
-                        value={movCantidad}
-                        onChange={(e) => setMovCantidad(e.target.value)}
-                        placeholder="Ej: 10"
-                    />
+                    <input type="number" min="1" step="1" value={movCantidad} onChange={(e) => setMovCantidad(e.target.value)} placeholder="Ej: 10" />
                 </div>
-                <div className="mod-form-group">
+                <div className={FORM_GROUP}>
                     <label>Motivo (opcional)</label>
-                    <input
-                        value={movMotivo}
-                        onChange={(e) => setMovMotivo(e.target.value)}
-                        placeholder={movType === 'in' ? 'Compra a proveedor' : 'Merma, rotura…'}
-                    />
+                    <input value={movMotivo} onChange={(e) => setMovMotivo(e.target.value)} placeholder={movType === 'in' ? 'Compra a proveedor' : 'Merma, rotura…'} />
                 </div>
             </ModFormModal>
         </div>
