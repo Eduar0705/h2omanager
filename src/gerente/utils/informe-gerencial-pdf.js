@@ -264,7 +264,7 @@ function piePagina(pdf, empresa) {
         pdf.setFontSize(8);
         pdf.setTextColor(120, 120, 120);
         pdf.text(
-            `H2O Manager — Informe gerencial — Generado ${new Date().toLocaleString('es-VE')} — Pág. ${i}/${totalPages}`,
+            `${empresa} — Informe gerencial — Generado ${new Date().toLocaleString('es-VE')} — Pág. ${i}/${totalPages}`,
             14,
             275
         );

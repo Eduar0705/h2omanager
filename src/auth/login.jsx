@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { FiMail, FiLock, FiEye, FiEyeOff, FiArrowRight } from 'react-icons/fi'
 import Swal from 'sweetalert2';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
+import { homePathForRole } from './auth.service';
 import '../assets/css/login.css'
 import Logo from '../../public/Logo.webp'
 
 export default function Login() {
     const navigate = useNavigate();
-    const location = useLocation();
-    const { login, isAuthenticated, loading: authLoading } = useAuth();
+    const { login, isAuthenticated, loading: authLoading, user: authUser } = useAuth();
     const [email, setEmail]           = useState('')
     const [password, setPassword]     = useState('')
     const [showPassword, setShowPass] = useState(false)
@@ -59,7 +59,7 @@ export default function Login() {
         setIsLoading(true);
         try {
             const user = await login(email.trim(), password);
-            const dest = location.state?.from || '/gerente/home';
+            const dest = homePathForRole(user?.role);
             await Swal.fire({
                 icon: 'success',
                 title: 'Inicio de sesión exitoso',
@@ -93,7 +93,7 @@ export default function Login() {
     }
 
     if (isAuthenticated) {
-        return <Navigate to="/gerente/home" replace />;
+        return <Navigate to={homePathForRole(authUser?.role)} replace />;
     }
 
     return (

@@ -44,7 +44,7 @@ export default function Rutas() {
                 empleadoService.getEmpleados()
             ]);
             setRutas(rData); setEmpleados(eData);
-        } catch (e) { Swal.fire('Error', 'No se pudieron cargar las rutas', 'error'); }
+        } catch { Swal.fire('Error', 'No se pudieron cargar las rutas', 'error'); }
         finally { setIsLoading(false); }
     };
 

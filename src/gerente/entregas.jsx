@@ -38,7 +38,7 @@ export default function Entregas() {
             ]);
             setEntregas(data);
             setClients(cData);
-        } catch (e) {
+        } catch {
             Swal.fire('Error', 'No se pudieron cargar las entregas', 'error');
         } finally { setIsLoading(false); }
     };

@@ -130,7 +130,6 @@ export default function VentasWizard() {
     const [config, setConfig] = useState({ exchangeRate: 54.50, iva: 16 });
 
     // Order State
-    const [clientMode] = useState('registered');
     const [selectedClient, setSelectedClient] = useState(null);
     const [cart, setCart] = useState([]);
     const [paymentMethod, setPaymentMethod] = useState(null);

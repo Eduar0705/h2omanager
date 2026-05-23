@@ -1,19 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
 
-/* ── VARIABLES (mismas que index.css) ────────────── */
-:root {
-  --bg:      #f0f5fb;
-  --surface: #ffffff;
-  --accent:  #0077cc;
-  --accent2: #00b899;
-  --text:    #0d1f33;
-  --muted:   #6b85a3;
-  --border:  #d0dcea;
-  --shadow:  rgba(0, 90, 180, 0.10);
-  --danger:  #e03e3e;
-  --font-display: 'Syne', sans-serif;
-  --font-body:    'DM Sans', sans-serif;
-}
+/* Las variables de diseño (--bg, --accent, --danger, etc.) viven en style.css */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 

@@ -29,6 +29,11 @@ export default function Navbar({ toggleSidebar, user, onLogout }) {
         navigate("/login")
     }
 
+    const handlePerfil = () => {
+        setShowUserMenu(false)
+        navigate(user?.role === 2 ? '/empleado/perfil' : '/gerente/perfil')
+    }
+
     const roleLabel = user?.role === 2 ? 'Empleado' : 'Gerente'
     const initials  = user?.name?.charAt(0)?.toUpperCase() || 'U'
 
@@ -91,7 +96,7 @@ export default function Navbar({ toggleSidebar, user, onLogout }) {
 
                             <div className="topnav-dropdown-divider" />
 
-                            <button className="topnav-dd-item">
+                            <button className="topnav-dd-item" onClick={handlePerfil}>
                                 <FiUser />
                                 <span>Mi Perfil</span>
                             </button>

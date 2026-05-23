@@ -7,6 +7,9 @@ import ProtectedRoute from './auth/ProtectedRoute.jsx';
 // Layout de gerente
 import GerenteLayout from './gerente/GerenteLayout.jsx';
 
+// Perfil (compartido por todos los roles)
+import Perfil from './components/Perfil.jsx';
+
 // Páginas de gerente
 import HomeGere from './gerente/home.jsx';
 import Botellones from './gerente/botellones.jsx';
@@ -18,6 +21,14 @@ import Reportes from './gerente/reportes.jsx';
 import Proveedores from './gerente/provedores.jsx';
 import Empleados from './gerente/empleados.jsx';
 import Contabilidad from './gerente/contabilidad.jsx';
+
+// Layout y páginas de empleado (vendedor)
+import EmpleadoLayout from './empleado/EmpleadoLayout.jsx';
+import HomeEmp from './empleado/home.jsx';
+import VentasEmp from './empleado/ventas.jsx';
+import ClientesEmp from './empleado/clientes.jsx';
+import BotellonesEmp from './empleado/botellones.jsx';
+import HistorialEmp from './empleado/historial.jsx';
 
 function App() {
     return (
@@ -33,7 +44,7 @@ function App() {
                 <Route
                     path="/gerente"
                     element={
-                        <ProtectedRoute>
+                        <ProtectedRoute role={1}>
                             <GerenteLayout />
                         </ProtectedRoute>
                     }
@@ -49,6 +60,25 @@ function App() {
                     <Route path="contabilidad" element={<Contabilidad />} />
                     <Route path="proveedores" element={<Proveedores />} />
                     <Route path="empleados" element={<Empleados />} />
+                    <Route path="perfil" element={<Perfil />} />
+                </Route>
+
+                {/* Rutas de empleado (vendedor) */}
+                <Route
+                    path="/empleado"
+                    element={
+                        <ProtectedRoute role={2}>
+                            <EmpleadoLayout />
+                        </ProtectedRoute>
+                    }
+                >
+                    <Route index element={<Navigate to="home" replace />} />
+                    <Route path="home" element={<HomeEmp />} />
+                    <Route path="clientes" element={<ClientesEmp />} />
+                    <Route path="botellones" element={<BotellonesEmp />} />
+                    <Route path="ventas" element={<VentasEmp />} />
+                    <Route path="historial" element={<HistorialEmp />} />
+                    <Route path="perfil" element={<Perfil />} />
                 </Route>
             </Routes>
         </BrowserRouter>

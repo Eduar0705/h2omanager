@@ -25,6 +25,11 @@ export function mapRolIdToUiRole(rolId) {
     return 1;
 }
 
+/** Ruta de inicio según el rol de UI (2 = empleado/vendedor, resto = gerente). */
+export function homePathForRole(role) {
+    return Number(role) === 2 ? '/empleado/home' : '/gerente/home';
+}
+
 function mapApiUserToSession(apiUser) {
     return {
         id: apiUser.id,

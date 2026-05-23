@@ -11,6 +11,10 @@
   --muted:    #6b85a3;
   --border:   #d0dcea;
   --shadow:   rgba(0, 90, 180, 0.10);
+  --danger:   #e03e3e;
+  --sidebar-w-open:   230px;
+  --sidebar-w-closed:  64px;
+  --transition: 0.22s ease;
   --font-display: 'Syne', sans-serif;
   --font-body:    'DM Sans', sans-serif;
 }
@@ -380,4 +384,57 @@ h1 {
     justify-content: center;
     text-align: center;
   }
+}
+
+/* ── SWEETALERT2 (estilo de marca) ───────────────── */
+/* Usado por las alertas con buttonsStyling:false + customClass swal-* */
+.swal-popup {
+  border-radius: 18px;
+  font-family: var(--font-body);
+  padding: 28px 24px 24px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+}
+
+.swal-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.4px;
+}
+
+.swal-text {
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.swal-confirm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #ffffff;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 12px 34px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(0, 119, 204, 0.28);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.swal-confirm-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0, 119, 204, 0.32);
+  filter: brightness(1.05);
+}
+
+.swal-confirm-btn:active { transform: scale(0.98); }
+
+.swal-confirm-btn:focus,
+.swal-confirm-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(0, 119, 204, 0.18);
 }

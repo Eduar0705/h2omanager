@@ -1,7 +1,7 @@
 /* ── INVENTARIO (recarga / botellones) ───────────────── */
 
 .botellones-container {
-    padding: 10px 10px 48px;
+    padding: 10px;
     animation: fadeIn 0.35s ease-out;
     position: relative;
 }

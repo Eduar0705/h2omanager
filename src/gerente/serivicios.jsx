@@ -30,7 +30,7 @@ export default function Servicios() {
         try {
             const [sData, cData] = await Promise.all([servicioService.getServicios(), clientService.getClients()]);
             setServicios(sData); setClients(cData);
-        } catch (e) { Swal.fire('Error', 'No se pudieron cargar los servicios', 'error'); }
+        } catch { Swal.fire('Error', 'No se pudieron cargar los servicios', 'error'); }
         finally { setIsLoading(false); }
     };
 
